@@ -41,6 +41,10 @@ fun calcularDescuento(total: Double): Double {
     }
 }
 
+// Reto adicional
+fun buscarProducto(productos: List<Producto>, nombre: String): Producto? {
+    return productos.find { it.nombre.equals(nombre, ignoreCase = true) }
+}
 fun main() {
     println("=========================================")
     println("      CARRITO DE COMPRAS - TIENDA TECSUP ")
@@ -59,6 +63,20 @@ fun main() {
     for (producto in carrito) {
         println("Producto agregado: ${producto.nombre}")
     }
+    println()
+
+    val busqueda = "Mouse Logitech"
+    val encontrado = buscarProducto(carrito, busqueda)
+    if (encontrado != null) {
+        println("Producto encontrado: ${encontrado.nombre} - Precio: S/ ${encontrado.precio}")
+    } else {
+        println("El producto '$busqueda' no se encuentra en el carrito.")
+    }
+    println()
+
+    val productoAEliminar = "Mouse Logitech"
+    println("Eliminando '$productoAEliminar' del carrito...")
+    carrito.removeIf { it.nombre.equals(productoAEliminar, ignoreCase = true) }
     println()
 
     mostrarDetalle(carrito)
