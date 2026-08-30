@@ -7,6 +7,6 @@ import org.junit.Assert.*
 class ExampleUnitTest {
     @Test
     fun ejecutar() {
-        ejecutarCarritoPOO()
+        mainSinIA()
     }
 }

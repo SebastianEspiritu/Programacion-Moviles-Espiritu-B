@@ -45,7 +45,7 @@ fun calcularDescuento(total: Double): Double {
 fun buscarProducto(productos: List<Producto>, nombre: String): Producto? {
     return productos.find { it.nombre.equals(nombre, ignoreCase = true) }
 }
-fun main() {
+fun mainSinIA() {
     println("=========================================")
     println("      CARRITO DE COMPRAS - TIENDA TECSUP ")
     println("=========================================")
