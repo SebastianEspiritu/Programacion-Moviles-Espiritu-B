@@ -31,6 +31,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.espiritu.lab03registroproducto.ui.theme.Lab03RegistroProductoTheme
 import java.util.Locale
+import androidx.compose.ui.graphics.Color
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -135,6 +136,14 @@ fun PantallaRegistro(modifier: Modifier = Modifier) {
                     )
                 }
             }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Agregado de la Parte 5: Mensaje de confirmación en verde
+            Text(
+                text = "✓ Producto registrado correctamente",
+                color = Color(0xFF2E7D32),
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
     }
 }
