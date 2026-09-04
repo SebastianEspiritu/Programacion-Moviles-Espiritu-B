@@ -17,6 +17,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -54,6 +55,8 @@ fun PantallaRegistro(modifier: Modifier = Modifier) {
     var cantidad by remember { mutableStateOf("") }
     var mostrarResumen by remember { mutableStateOf(false) }
 
+    var mensajeError by remember { mutableStateOf("") }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -72,7 +75,10 @@ fun PantallaRegistro(modifier: Modifier = Modifier) {
 
         OutlinedTextField(
             value = nombre,
-            onValueChange = { nombre = it },
+            onValueChange = {
+                nombre = it
+                mensajeError = ""
+            },
             label = { Text("Nombre del producto") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
@@ -86,7 +92,10 @@ fun PantallaRegistro(modifier: Modifier = Modifier) {
         ) {
             OutlinedTextField(
                 value = precio,
-                onValueChange = { precio = it },
+                onValueChange = {
+                    precio = it
+                    mensajeError = ""
+                },
                 label = { Text("Precio (S/)") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.weight(1f),
@@ -95,7 +104,10 @@ fun PantallaRegistro(modifier: Modifier = Modifier) {
 
             OutlinedTextField(
                 value = cantidad,
-                onValueChange = { cantidad = it },
+                onValueChange = {
+                    cantidad = it
+                    mensajeError = ""
+                },
                 label = { Text("Cantidad") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.weight(1f),
@@ -105,14 +117,49 @@ fun PantallaRegistro(modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // AGREGADO IA: Texto en rojo para la validación de campos vacíos
+        if (mensajeError.isNotEmpty()) {
+            Text(
+                text = mensajeError,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
+
+        // AGREGADO IA: Validación antes de mostrar la Card
         Button(
-            onClick = { mostrarResumen = true },
+            onClick = {
+                if (nombre.isBlank() || precio.isBlank() || cantidad.isBlank()) {
+                    mensajeError = "Por favor, completa todos los campos"
+                    mostrarResumen = false
+                } else {
+                    mensajeError = ""
+                    mostrarResumen = true
+                }
+            },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("AGREGAR PRODUCTO")
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // AGREGADO IA: Botón secundario para limpiar el formulario
+        OutlinedButton(
+            onClick = {
+                nombre = ""
+                precio = ""
+                cantidad = ""
+                mostrarResumen = false
+                mensajeError = ""
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("LIMPIAR FORMULARIO")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         if (mostrarResumen) {
             val precioNum = precio.toDoubleOrNull() ?: 0.0
@@ -138,7 +185,6 @@ fun PantallaRegistro(modifier: Modifier = Modifier) {
             }
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Agregado de la Parte 5: Mensaje de confirmación en verde
             Text(
                 text = "✓ Producto registrado correctamente",
                 color = Color(0xFF2E7D32),
