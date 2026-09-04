@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.roundToInt
 import com.espiritu.registronotas.ui.theme.RegistroNotasTheme
 
 class MainActivity : ComponentActivity() {
@@ -205,7 +206,115 @@ fun RegistroNotasScreen(modifier: Modifier = Modifier) {
                         .align(Alignment.CenterHorizontally)
                 )
             }
+            if (mostrarResultado) {
+                // 1. Cálculo del promedio ponderado (Pesos: 20%, 25%, 30%, 25%)
+                val promedioPonderado = (notaFP.toInt() * 0.20f) +
+                        (notaPOO.toInt() * 0.25f) +
+                        (notaPM.toInt() * 0.30f) +
+                        (notaBD.toInt() * 0.25f)
 
+                // 2. Aplicar redondeo según el Switch
+                val promedioFinal = if (redondearPromedio) {
+                    promedioPonderado.roundToInt().toFloat()
+                } else {
+                    promedioPonderado
+                }
+
+                // 3. Reglas de negocio para la observación y color del Chip
+                val (observacion, chipBgColor, chipTextColor) = when {
+                    promedioFinal >= 17f -> Triple("EXCELENTE", Color(0xFFD1E7DD), Color(0xFF0F5132))      // Verde oscuro
+                    promedioFinal >= 13f -> Triple("APROBADO", Color(0xFFE2F0D9), Color(0xFF2E7D32))       // Verde
+                    promedioFinal >= 10f -> Triple("EN RECUPERACIÓN", Color(0xFFFFF3CD), Color(0xFF664D03))// Ámbar
+                    else -> Triple("DESAPROBADO", Color(0xFFF8D7DA), Color(0xFF842029))                    // Rojo
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Tarjeta de Resultados (Borde morado claro)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD0C4E8))
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = "Promedio ponderado:  ${String.format(java.util.Locale.US, "%.2f", promedioPonderado)}",
+                            fontSize = 15.sp,
+                            color = Color(0xFF1C1B1F)
+                        )
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Row(verticalAlignment = Alignment.Bottom) {
+                            Text(
+                                text = "Promedio final:  ",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = purplePrimary
+                            )
+                            Text(
+                                text = if (redondearPromedio) "${promedioFinal.toInt()}" else String.format(java.util.Locale.US, "%.2f", promedioFinal),
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = purplePrimary
+                            )
+                        }
+
+                        if (redondearPromedio) {
+                            Text(
+                                text = "(redondeado)",
+                                fontSize = 11.sp,
+                                color = Color.Gray
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Chip de Observación
+                        Surface(
+                            color = chipBgColor,
+                            shape = RoundedCornerShape(20.dp)
+                        ) {
+                            Text(
+                                text = observacion,
+                                color = chipTextColor,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                }
+
+                // Mensaje de Confirmación Verde
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "✓  Promedio calculado correctamente",
+                        color = Color(0xFF2E7D32),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
+                }
+            }
+
+            // Pie de página fijo al final
+            Spacer(modifier = Modifier.height(30.dp))
+            Text(
+                text = "Desarrollado por: Sebastian Espiritu",
+                fontSize = 12.sp,
+                color = Color.Gray,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
         }
     }
 }
