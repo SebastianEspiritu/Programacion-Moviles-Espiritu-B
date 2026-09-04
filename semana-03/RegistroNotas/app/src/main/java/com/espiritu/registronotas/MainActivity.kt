@@ -47,6 +47,7 @@ fun RegistroNotasScreen(modifier: Modifier = Modifier) {
 
     // Colores de la interfaz
     val purpleHeader = Color(0xFF5E43A5)
+    val purplePrimary = Color(0xFF5E43A5)
     val backgroundGradient = Brush.verticalGradient(
         colors = listOf(Color(0xFFECE6F8), Color(0xFFF7F4FD))
     )
@@ -119,6 +120,91 @@ fun RegistroNotasScreen(modifier: Modifier = Modifier) {
                 nota = notaBD,
                 onNotaChange = { notaBD = it }
             )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Switch: Redondear promedio final
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Redondear promedio final",
+                    fontSize = 15.sp,
+                    color = Color(0xFF1C1B1F)
+                )
+                Switch(
+                    checked = redondearPromedio,
+                    onCheckedChange = { redondearPromedio = it },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = purplePrimary
+                    )
+                )
+            }
+
+            // Checkbox: Confirmo que las notas son correctas
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = notasConfirmadas,
+                    onCheckedChange = {
+                        notasConfirmadas = it
+                        if (!it) mostrarResultado = false
+                    },
+                    colors = CheckboxDefaults.colors(
+                        checkedColor = purplePrimary
+                    )
+                )
+                Text(
+                    text = "Confirmo que las notas son correctas",
+                    fontSize = 14.sp,
+                    color = Color(0xFF1C1B1F)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Botón Calcular Promedio (deshabilitado si no confirma)
+            Button(
+                onClick = { mostrarResultado = true },
+                enabled = notasConfirmadas,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(25.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = purplePrimary,
+                    disabledContainerColor = Color(0xFFC0B8DA),
+                    contentColor = Color.White,
+                    disabledContentColor = Color.White
+                )
+            ) {
+                Text(
+                    text = "CALCULAR PROMEDIO",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp
+                )
+            }
+
+            // Mensaje previo al cálculo
+            if (!mostrarResultado) {
+                Text(
+                    text = "Asigna las notas y confirma para calcular",
+                    fontSize = 13.sp,
+                    color = Color.Gray,
+                    modifier = Modifier
+                        .padding(top = 16.dp)
+                        .align(Alignment.CenterHorizontally)
+                )
+            }
 
         }
     }
