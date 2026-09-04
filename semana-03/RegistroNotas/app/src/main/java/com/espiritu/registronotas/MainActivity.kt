@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -70,7 +71,7 @@ fun RegistroNotasScreen(modifier: Modifier = Modifier) {
             )
         }
 
-        // Cuerpos con Scroll vertical
+        // Cuerpos con Scroll
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -91,6 +92,92 @@ fun RegistroNotasScreen(modifier: Modifier = Modifier) {
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
+            CursoItem(
+                nombre = "Fundamentos de Programación",
+                pesoText = "(20%)",
+                nota = notaFP,
+                onNotaChange = { notaFP = it }
+            )
+
+            CursoItem(
+                nombre = "Programación Orientada a Objetos",
+                pesoText = "(25%)",
+                nota = notaPOO,
+                onNotaChange = { notaPOO = it }
+            )
+
+            CursoItem(
+                nombre = "Programación en Móviles",
+                pesoText = "(30%)",
+                nota = notaPM,
+                onNotaChange = { notaPM = it }
+            )
+
+            CursoItem(
+                nombre = "Base de Datos",
+                pesoText = "(25%)",
+                nota = notaBD,
+                onNotaChange = { notaBD = it }
+            )
+
         }
+    }
+}
+
+@Composable
+fun CursoItem(
+    nombre: String,
+    pesoText: String,
+    nota: Float,
+    onNotaChange: (Float) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = nombre,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = Color(0xFF1C1B1F)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = pesoText,
+                    fontSize = 12.sp,
+                    color = Color(0xFF6750A4)
+                )
+            }
+
+            // Badge con la nota en vivo
+            Surface(
+                color = Color(0xFFECE6F8),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    text = "${nota.toInt()}",
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF5E43A5),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                    fontSize = 14.sp
+                )
+            }
+        }
+
+        // Slider con paso entero (0 a 20)
+        Slider(
+            value = nota,
+            onValueChange = onNotaChange,
+            valueRange = 0f..20f,
+            steps = 19,
+            colors = SliderDefaults.colors(
+                thumbColor = Color(0xFF5E43A5),
+                activeTrackColor = Color(0xFF5E43A5),
+                inactiveTrackColor = Color(0xFFE2DBEC)
+            )
+        )
     }
 }
