@@ -326,6 +326,11 @@ fun CursoItem(
     nota: Float,
     onNotaChange: (Float) -> Unit
 ) {
+    // Reto: Semáforo visual en la nota
+    val notaInt = nota.toInt()
+    val badgeBgColor = if (notaInt < 13) Color(0xFFF8D7DA) else Color(0xFFD1E7DD)
+    val badgeTextColor = if (notaInt < 13) Color(0xFF842029) else Color(0xFF0F5132)
+
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -347,22 +352,21 @@ fun CursoItem(
                 )
             }
 
-            // Badge con la nota en vivo
+            // Badge con color dinámico (Semáforo)
             Surface(
-                color = Color(0xFFECE6F8),
+                color = badgeBgColor,
                 shape = RoundedCornerShape(8.dp)
             ) {
                 Text(
-                    text = "${nota.toInt()}",
+                    text = "$notaInt",
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF5E43A5),
+                    color = badgeTextColor,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     fontSize = 14.sp
                 )
             }
         }
 
-        // Slider con paso entero (0 a 20)
         Slider(
             value = nota,
             onValueChange = onNotaChange,
