@@ -41,12 +41,11 @@ fun RegistroNotasScreen(modifier: Modifier = Modifier) {
     var notaPOO by remember { mutableFloatStateOf(0f) }
     var notaPM by remember { mutableFloatStateOf(0f) }
     var notaBD by remember { mutableFloatStateOf(0f) }
-    // --- ESTADOS DE CONTROLES Y RESULTADO ---
+
     var redondearPromedio by remember { mutableStateOf(false) }
     var notasConfirmadas by remember { mutableStateOf(false) }
     var mostrarResultado by remember { mutableStateOf(false) }
 
-    // Colores de la interfaz
     val purpleHeader = Color(0xFF5E43A5)
     val purplePrimary = Color(0xFF5E43A5)
     val backgroundGradient = Brush.verticalGradient(
@@ -58,7 +57,7 @@ fun RegistroNotasScreen(modifier: Modifier = Modifier) {
             .fillMaxSize()
             .background(brush = backgroundGradient)
     ) {
-        // Barra Superior: Registro de Notas
+        // Barra Superior
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -73,14 +72,13 @@ fun RegistroNotasScreen(modifier: Modifier = Modifier) {
             )
         }
 
-        // Cuerpos con Scroll
+        // Cuerpo con Scroll
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 20.dp, vertical = 16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Sección Título
             Text(
                 text = "Notas del ciclo",
                 fontSize = 20.sp,
@@ -173,26 +171,56 @@ fun RegistroNotasScreen(modifier: Modifier = Modifier) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Botón Calcular Promedio (deshabilitado si no confirma)
-            Button(
-                onClick = { mostrarResultado = true },
-                enabled = notasConfirmadas,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                shape = RoundedCornerShape(25.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = purplePrimary,
-                    disabledContainerColor = Color(0xFFC0B8DA),
-                    contentColor = Color.White,
-                    disabledContentColor = Color.White
-                )
+            // Fila de Botones: CALCULAR PROMEDIO + LIMPIAR
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text = "CALCULAR PROMEDIO",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp
-                )
+                Button(
+                    onClick = { mostrarResultado = true },
+                    enabled = notasConfirmadas,
+                    modifier = Modifier
+                        .weight(1.8f)
+                        .height(50.dp),
+                    shape = RoundedCornerShape(25.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = purplePrimary,
+                        disabledContainerColor = Color(0xFFC0B8DA),
+                        contentColor = Color.White,
+                        disabledContentColor = Color.White
+                    )
+                ) {
+                    Text(
+                        text = "CALCULAR PROMEDIO",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
+                }
+
+                // Reto: Botón LIMPIAR
+                OutlinedButton(
+                    onClick = {
+                        notaFP = 0f
+                        notaPOO = 0f
+                        notaPM = 0f
+                        notaBD = 0f
+                        redondearPromedio = false
+                        notasConfirmadas = false
+                        mostrarResultado = false
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(50.dp),
+                    shape = RoundedCornerShape(25.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, purplePrimary)
+                ) {
+                    Text(
+                        text = "LIMPIAR",
+                        fontWeight = FontWeight.Bold,
+                        color = purplePrimary,
+                        fontSize = 12.sp
+                    )
+                }
             }
 
             // Mensaje previo al cálculo
@@ -206,31 +234,31 @@ fun RegistroNotasScreen(modifier: Modifier = Modifier) {
                         .align(Alignment.CenterHorizontally)
                 )
             }
-            if (mostrarResultado) {
-                // 1. Cálculo del promedio ponderado (Pesos: 20%, 25%, 30%, 25%)
-                val promedioPonderado = (notaFP.toInt() * 0.20f) +
-                        (notaPOO.toInt() * 0.25f) +
-                        (notaPM.toInt() * 0.30f) +
-                        (notaBD.toInt() * 0.25f)
 
-                // 2. Aplicar redondeo según el Switch
+            // Tarjeta de Resultados
+            if (mostrarResultado) {
+                val aporteFP = notaFP.toInt() * 0.20f
+                val aportePOO = notaPOO.toInt() * 0.25f
+                val aportePM = notaPM.toInt() * 0.30f
+                val aporteBD = notaBD.toInt() * 0.25f
+
+                val promedioPonderado = aporteFP + aportePOO + aportePM + aporteBD
+
                 val promedioFinal = if (redondearPromedio) {
                     promedioPonderado.roundToInt().toFloat()
                 } else {
                     promedioPonderado
                 }
 
-                // 3. Reglas de negocio para la observación y color del Chip
                 val (observacion, chipBgColor, chipTextColor) = when {
-                    promedioFinal >= 17f -> Triple("EXCELENTE", Color(0xFFD1E7DD), Color(0xFF0F5132))      // Verde oscuro
-                    promedioFinal >= 13f -> Triple("APROBADO", Color(0xFFE2F0D9), Color(0xFF2E7D32))       // Verde
-                    promedioFinal >= 10f -> Triple("EN RECUPERACIÓN", Color(0xFFFFF3CD), Color(0xFF664D03))// Ámbar
-                    else -> Triple("DESAPROBADO", Color(0xFFF8D7DA), Color(0xFF842029))                    // Rojo
+                    promedioFinal >= 17f -> Triple("EXCELENTE", Color(0xFFD1E7DD), Color(0xFF0F5132))
+                    promedioFinal >= 13f -> Triple("APROBADO", Color(0xFFE2F0D9), Color(0xFF2E7D32))
+                    promedioFinal >= 10f -> Triple("EN RECUPERACIÓN", Color(0xFFFFF3CD), Color(0xFF664D03))
+                    else -> Triple("DESAPROBADO", Color(0xFFF8D7DA), Color(0xFF842029))
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Tarjeta de Resultados (Borde morado claro)
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -242,6 +270,24 @@ fun RegistroNotasScreen(modifier: Modifier = Modifier) {
                             .fillMaxWidth()
                             .padding(16.dp)
                     ) {
+                        // Reto: Desglose de aporte por curso
+                        Text(
+                            text = "Aporte por curso:",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                        Text(text = "• Fundamentos: ${notaFP.toInt()} × 20% = ${String.format(java.util.Locale.US, "%.2f", aporteFP)}", fontSize = 12.sp, color = Color(0xFF333333))
+                        Text(text = "• POO: ${notaPOO.toInt()} × 25% = ${String.format(java.util.Locale.US, "%.2f", aportePOO)}", fontSize = 12.sp, color = Color(0xFF333333))
+                        Text(text = "• Móviles: ${notaPM.toInt()} × 30% = ${String.format(java.util.Locale.US, "%.2f", aportePM)}", fontSize = 12.sp, color = Color(0xFF333333))
+                        Text(text = "• Base de Datos: ${notaBD.toInt()} × 25% = ${String.format(java.util.Locale.US, "%.2f", aporteBD)}", fontSize = 12.sp, color = Color(0xFF333333))
+
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 10.dp),
+                            color = Color(0xFFE2DBEC)
+                        )
+
                         Text(
                             text = "Promedio ponderado:  ${String.format(java.util.Locale.US, "%.2f", promedioPonderado)}",
                             fontSize = 15.sp,
@@ -275,7 +321,6 @@ fun RegistroNotasScreen(modifier: Modifier = Modifier) {
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        // Chip de Observación
                         Surface(
                             color = chipBgColor,
                             shape = RoundedCornerShape(20.dp)
@@ -291,7 +336,6 @@ fun RegistroNotasScreen(modifier: Modifier = Modifier) {
                     }
                 }
 
-                // Mensaje de Confirmación Verde
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -299,7 +343,7 @@ fun RegistroNotasScreen(modifier: Modifier = Modifier) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "✓  Promedio calculado correctamente",
+                        text = "✓  Promedio calculated correctamente",
                         color = Color(0xFF2E7D32),
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp
@@ -307,7 +351,6 @@ fun RegistroNotasScreen(modifier: Modifier = Modifier) {
                 }
             }
 
-            // Pie de página fijo al final
             Spacer(modifier = Modifier.height(30.dp))
             Text(
                 text = "Desarrollado por: Sebastian Espiritu",
@@ -352,7 +395,6 @@ fun CursoItem(
                 )
             }
 
-            // Badge con color dinámico (Semáforo)
             Surface(
                 color = badgeBgColor,
                 shape = RoundedCornerShape(8.dp)
