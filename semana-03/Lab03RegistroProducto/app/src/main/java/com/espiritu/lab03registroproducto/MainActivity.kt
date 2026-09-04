@@ -130,8 +130,16 @@ fun PantallaRegistro(modifier: Modifier = Modifier) {
         // AGREGADO IA: Validación antes de mostrar la Card
         Button(
             onClick = {
+                // CORRECCION: Convertimos los valores a número para verificar validez
+                val pVal = precio.toDoubleOrNull()
+                val cVal = cantidad.toIntOrNull()
+
                 if (nombre.isBlank() || precio.isBlank() || cantidad.isBlank()) {
                     mensajeError = "Por favor, completa todos los campos"
+                    mostrarResumen = false
+                } else if (pVal == null || pVal <= 0 || cVal == null || cVal <= 0) {
+                    // CORRECCION: Evitamos que acepte letras o valores no válidos/menores a cero
+                    mensajeError = "Ingresa precio y cantidad válidos mayores a cero"
                     mostrarResumen = false
                 } else {
                     mensajeError = ""
