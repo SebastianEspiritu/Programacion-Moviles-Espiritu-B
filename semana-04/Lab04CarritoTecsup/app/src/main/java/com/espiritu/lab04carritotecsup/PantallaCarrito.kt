@@ -7,6 +7,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 
 @Composable
 fun PantallaCarrito() {
@@ -72,5 +74,13 @@ fun PantallaCarrito() {
         }
 
         Text("Productos: ${productos.size}")
+    }
+    LazyColumn(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(productos) { producto ->
+            Text("${producto.nombre} - S/ ${producto.precio} x ${producto.cantidad}")
+        }
     }
 }
