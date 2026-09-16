@@ -23,13 +23,39 @@ fun PantallaCarrito() {
 
     val productos = remember { mutableStateListOf<Producto>() }
 
+    // Estado para controlar qué producto se va a eliminar
+    var productoAEliminar by remember { mutableStateOf<Producto?>(null) }
+
+    // Diálogo de confirmación
+    if (productoAEliminar != null) {
+        AlertDialog(
+            onDismissRequest = { productoAEliminar = null },
+            title = { Text("¿Eliminar este producto?") },
+            text = { Text("¿Estás seguro de que deseas eliminar '${productoAEliminar?.nombre}' del carrito?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        productoAEliminar?.let { productos.remove(it) }
+                        productoAEliminar = null
+                    }
+                ) {
+                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { productoAEliminar = null }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        // Formulario
         OutlinedTextField(
             value = nombre,
             onValueChange = { nombre = it },
@@ -77,7 +103,6 @@ fun PantallaCarrito() {
             Text("AGREGAR")
         }
 
-        // Estado Vacío vs Lista + Panel de Totales
         if (productos.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -111,17 +136,15 @@ fun PantallaCarrito() {
                 items(productos) { producto ->
                     TarjetaProducto(
                         producto = producto,
-                        onEliminar = { productos.remove(producto) }
+                        onEliminar = { productoAEliminar = producto }
                     )
                 }
             }
 
-            // Cálculos del Lab 02
             val subtotal = productos.sumOf { it.precio * it.cantidad }
             val igv = subtotal * 0.18
             val total = subtotal + igv
 
-            // Panel de Totales
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
