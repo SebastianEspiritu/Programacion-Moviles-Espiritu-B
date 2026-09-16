@@ -1,14 +1,19 @@
 package com.espiritu.lab04carritotecsup
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
 
 @Composable
 fun PantallaCarrito() {
@@ -24,7 +29,6 @@ fun PantallaCarrito() {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-
         OutlinedTextField(
             value = nombre,
             onValueChange = { nombre = it },
@@ -62,7 +66,6 @@ fun PantallaCarrito() {
 
                 if (nombre.isNotBlank() && precioNum > 0 && cantidadNum > 0) {
                     productos.add(Producto(nombre, precioNum, cantidadNum))
-                    // Limpieza de campos
                     nombre = ""
                     precio = ""
                     cantidad = ""
@@ -73,14 +76,61 @@ fun PantallaCarrito() {
             Text("AGREGAR")
         }
 
-        Text("Productos: ${productos.size}")
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(productos) { producto ->
+                TarjetaProducto(
+                    producto = producto,
+                    onEliminar = { productos.remove(producto) }
+                )
+            }
+        }
     }
-    LazyColumn(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(productos) { producto ->
-            Text("${producto.nombre} - S/ ${producto.precio} x ${producto.cantidad}")
+}
+
+@Composable
+fun TarjetaProducto(
+    producto: Producto,
+    onEliminar: () -> Unit
+) {
+    val importe = producto.precio * producto.cantidad
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = producto.nombre,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "S/ ${String.format("%.2f", producto.precio)} x ${producto.cantidad}",
+                    color = Color.Gray
+                )
+            }
+
+            Text(
+                text = "S/ ${String.format("%.2f", importe)}",
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(end = 8.dp)
+            )
+
+            IconButton(onClick = onEliminar) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Eliminar",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
         }
     }
 }
