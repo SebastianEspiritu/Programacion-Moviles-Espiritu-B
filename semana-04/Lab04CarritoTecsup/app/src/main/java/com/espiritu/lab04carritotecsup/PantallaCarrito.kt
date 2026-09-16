@@ -23,10 +23,8 @@ fun PantallaCarrito() {
 
     val productos = remember { mutableStateListOf<Producto>() }
 
-    // Estado para controlar qué producto se va a eliminar
     var productoAEliminar by remember { mutableStateOf<Producto?>(null) }
 
-    // Diálogo de confirmación
     if (productoAEliminar != null) {
         AlertDialog(
             onDismissRequest = { productoAEliminar = null },
@@ -141,9 +139,19 @@ fun PantallaCarrito() {
                 }
             }
 
+            // Lógica con 'when' para descuentos
             val subtotal = productos.sumOf { it.precio * it.cantidad }
-            val igv = subtotal * 0.18
-            val total = subtotal + igv
+
+            val porcentajeDescuento = when {
+                subtotal > 5000.0 -> 0.10
+                subtotal > 3000.0 -> 0.05
+                else -> 0.0
+            }
+
+            val montoDescuento = subtotal * porcentajeDescuento
+            val subtotalConDescuento = subtotal - montoDescuento
+            val igv = subtotalConDescuento * 0.18
+            val total = subtotalConDescuento + igv
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -169,6 +177,26 @@ fun PantallaCarrito() {
                         Text("Subtotal:")
                         Text("S/ ${String.format("%.2f", subtotal)}")
                     }
+
+                    // Fila condicional de descuento
+                    if (montoDescuento > 0) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Descuento (${(porcentajeDescuento * 100).toInt()}%):",
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "- S/ ${String.format("%.2f", montoDescuento)}",
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
