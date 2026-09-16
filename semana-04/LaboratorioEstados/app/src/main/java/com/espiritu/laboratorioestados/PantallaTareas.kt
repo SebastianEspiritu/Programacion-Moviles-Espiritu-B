@@ -18,3 +18,46 @@ data class Tarea(
     val nombre: String,
     val completada: Boolean = false
 )
+
+@Composable
+fun ItemTarea(
+    tarea: Tarea,
+    onEliminar: () -> Unit,
+    onCambiarEstado: (Boolean) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                modifier = Modifier.weight(1f)
+            ) {
+                Checkbox(
+                    checked = tarea.completada,
+                    onCheckedChange = {
+                        onCambiarEstado(it)
+                    }
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(
+                    text = tarea.nombre,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(top = 12.dp)
+                )
+            }
+
+            Button(onClick = onEliminar) {
+                Text("Eliminar")
+            }
+        }
+    }
+}
