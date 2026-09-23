@@ -14,6 +14,6 @@ sealed class Screen(val route: String) {
     //Ruta con argumento {itemId} es el placeholder que Navigation reemplaza
     //con el valor real al momento de navegar
     object Detail : Screen("detail/{itemId}") {
-        fun createRute(itemId: Int): String = "detail/$itemId"
+        fun createRoute(itemId: Int): String = "detail/$itemId"
     }
 }
