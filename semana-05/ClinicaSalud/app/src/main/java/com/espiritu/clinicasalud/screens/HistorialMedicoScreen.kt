@@ -2,6 +2,7 @@ package com.espiritu.clinicasalud.screens
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
@@ -25,7 +26,9 @@ fun HistorialMedicoScreen(onMenuClick: () -> Unit) {
         }
     ) { padding ->
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
             Text("Aquí irá tu historial médico próximamente")
