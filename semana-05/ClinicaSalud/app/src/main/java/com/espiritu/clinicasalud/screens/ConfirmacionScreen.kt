@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.espiritu.clinicasalud.model.Cita
 
@@ -26,7 +27,7 @@ fun ConfirmacionScreen(
             Icons.Default.CheckCircle,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.primary
+            tint = Color(0xFF2E7D32)
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text("¡Cita agendada!", style = MaterialTheme.typography.headlineSmall)
