@@ -58,7 +58,15 @@ fun PerfilMedicoScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = medico.descripcion,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
 
             Button(
                 onClick = onAgendarCita,
