@@ -2,7 +2,8 @@ package com.espiritu.clinicasalud.model
 
 enum class EstadoCita {
     CONFIRMADA,
-    COMPLETADA
+    COMPLETADA,
+    CANCELADA
 }
 
 data class Cita(
