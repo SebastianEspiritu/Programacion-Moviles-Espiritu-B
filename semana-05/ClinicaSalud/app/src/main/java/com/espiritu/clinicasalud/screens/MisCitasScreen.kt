@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -17,7 +18,8 @@ import com.espiritu.clinicasalud.model.EstadoCita
 @Composable
 fun MisCitasScreen(
     citas: List<Cita>,
-    onMenuClick: () -> Unit
+    onMenuClick: () -> Unit,
+    onCancelarCita: (Cita) -> Unit // 1. Parámetro añadido a la función principal
 ) {
     Scaffold(
         topBar = {
@@ -34,7 +36,7 @@ fun MisCitasScreen(
         if (citas.isEmpty()) {
             Box(
                 modifier = Modifier.padding(padding).fillMaxSize(),
-                contentAlignment = androidx.compose.ui.Alignment.Center
+                contentAlignment = Alignment.Center
             ) {
                 Text("Aún no tienes citas agendadas")
             }
@@ -45,7 +47,10 @@ fun MisCitasScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(citas) { cita ->
-                    TarjetaCita(cita)
+                    TarjetaCita(
+                        cita = cita,
+                        onCancelarCita = onCancelarCita // 2. Callback enviado a la tarjeta
+                    )
                 }
             }
         }
@@ -53,7 +58,10 @@ fun MisCitasScreen(
 }
 
 @Composable
-fun TarjetaCita(cita: Cita) {
+fun TarjetaCita(
+    cita: Cita,
+    onCancelarCita: (Cita) -> Unit // 3. Recibido en la tarjeta
+) {
     val colorEstado = if (cita.estado == EstadoCita.CONFIRMADA) {
         Color(0xFF2E7D32)
     } else {
@@ -65,17 +73,36 @@ fun TarjetaCita(cita: Cita) {
             Text(cita.medico.nombre, style = MaterialTheme.typography.titleMedium)
             Text(cita.medico.especialidad, style = MaterialTheme.typography.bodyMedium)
             Text("${cita.fecha} - ${cita.hora}", style = MaterialTheme.typography.bodyMedium)
-            Spacer(modifier = Modifier.height(6.dp))
-            Surface(
-                color = colorEstado.copy(alpha = 0.15f),
-                shape = MaterialTheme.shapes.small
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = if (cita.estado == EstadoCita.CONFIRMADA) "Confirmada" else "Completada",
-                    color = colorEstado,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.labelMedium
-                )
+                Surface(
+                    color = colorEstado.copy(alpha = 0.15f),
+                    shape = MaterialTheme.shapes.small
+                ) {
+                    Text(
+                        text = if (cita.estado == EstadoCita.CONFIRMADA) "Confirmada" else "Completada",
+                        color = colorEstado,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                }
+
+                // 4. Botón de cancelar visible cuando la cita esté confirmada
+                if (cita.estado == EstadoCita.CONFIRMADA) {
+                    OutlinedButton(
+                        onClick = { onCancelarCita(cita) },
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Text("Cancelar")
+                    }
+                }
             }
         }
     }
