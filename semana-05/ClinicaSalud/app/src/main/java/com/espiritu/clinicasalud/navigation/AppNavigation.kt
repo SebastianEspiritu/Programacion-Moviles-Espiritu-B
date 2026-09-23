@@ -17,6 +17,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.espiritu.clinicasalud.model.Cita
 import com.espiritu.clinicasalud.model.listaMedicos
+import com.espiritu.clinicasalud.model.EstadoCita
 import com.espiritu.clinicasalud.screens.*
 import kotlinx.coroutines.launch
 
@@ -147,7 +148,12 @@ fun AppNavigation() {
                 MisCitasScreen(
                     citas = citas,
                     onMenuClick = { scope.launch { drawerState.open() } },
-                    onCancelarCita = { cita -> citas.remove(cita) }
+                    onCancelarCita = { citaACancelar ->
+                        val index = citas.indexOf(citaACancelar)
+                        if (index != -1) {
+                            citas[index] = citaACancelar.copy(estado = EstadoCita.CANCELADA)
+                        }
+                    }
                 )
             }
 
