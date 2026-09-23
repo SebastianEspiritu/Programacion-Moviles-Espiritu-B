@@ -1,16 +1,16 @@
 package com.espiritu.navlab.navigation
 
-import com.espiritu.navlab.screens.DetailScreen
-import com.espiritu.navlab.screens.HomeScreen
-import com.espiritu.navlab.screens.ListScreen
-import com.espiritu.navlab.screens.ProfileScreen
 import androidx.compose.runtime.Composable
-import androidx.navigation.NavHost
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.espiritu.navlab.screens.DetailScreen
+import com.espiritu.navlab.screens.HomeScreen
+import com.espiritu.navlab.screens.ListScreen
+import com.espiritu.navlab.screens.LoginScreen
+import com.espiritu.navlab.screens.ProfileScreen
 
 @Composable
 fun AppNavigation() {
@@ -18,8 +18,11 @@ fun AppNavigation() {
 
     NavHost(
         navController = navController,
-        startDestination = Screen.Home.route
+        startDestination = Screen.Login.route
     ) {
+        composable(Screen.Login.route) {
+            LoginScreen(navController)
+        }
         composable(Screen.Home.route) {
             HomeScreen(navController)
         }
