@@ -34,12 +34,25 @@ fun InicioScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Clínica Salud+") },
+                title = {
+                    Column {
+                        Text("Clínica Salud+", style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            "Hola, Sebastián",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onMenuClick) {
                         Icon(Icons.Default.Menu, contentDescription = "Menú")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                )
             )
         }
     ) { padding ->
