@@ -56,3 +56,30 @@ dependencies {
     // Componentes de diseño Material 3
     implementation("androidx.compose.material3:material3")
 }
+```
+
+## PROMPT UTILIZADO PARA LA MEJORA:
+Tengo una app en Jetpack Compose con navegación (Navigation Compose) ya funcionando, con esta estructura:
+
+- Screen.kt: sealed class con las rutas (Home, List, Detail/{itemId}, Profile)
+- AppNavigation.kt: NavHost con los composables
+- MainActivity.kt
+- HomeScreen.kt: pantalla "Bienvenido, [Nombre]" con dos tarjetas/opciones: "Directorio de Alumnos" y "Mi Perfil Académico"
+- ListScreen.kt: Directorio de Alumnos con avatares, cada uno navega a Detail pasando su id como Int
+- DetailScreen.kt: Expediente Académico, muestra los datos del alumno recibido desde el NavHost
+- ProfileScreen.kt: "Configuración de Perfil" con secciones de información personal y académica, y un botón al final
+
+Necesito dos cambios puntuales, manteniendo intacta la lógica de navegación que ya tengo (rutas, argumentos, NavHost):
+
+1. Agregar una pantalla de Login como punto de partida de la app:
+   - Crear LoginScreen.kt con campo de correo institucional, campo de contraseña y botón "Iniciar Sesión"
+   - Agregar la ruta Login en Screen.kt
+   - Cambiar el startDestination del NavHost en AppNavigation.kt de Home a Login
+   - Al presionar "Iniciar Sesión" (no hace falta validar contra nada real, puede ser solo navegación), debe navegar a Home ("Bienvenido, [Nombre]") usando navController.navigate(Screen.Home.route) { popUpTo(Screen.Login.route) { inclusive = true } } para que no se pueda volver al login con el botón atrás
+
+2. Corregir ProfileScreen.kt ("Configuración de Perfil"):
+   - Agregar un TopAppBar con flecha de regreso (ícono ArrowBack) que use navController.popBackStack() para volver a Home (donde están las opciones "Directorio de Alumnos" y "Mi Perfil Académico")
+   - Eliminar el botón "Ir al Inicio" que tenía antes
+   - Dejar solo un botón que diga exactamente "Cerrar Sesión", ubicado abajo como estaba, pero que ahora navegue de vuelta a Login usando navController.navigate(Screen.Login.route) { popUpTo(0) } para limpiar todo el back stack
+
+Dame el código completo de los archivos que cambian: Screen.kt, AppNavigation.kt, LoginScreen.kt (nuevo) y ProfileScreen.kt actualizado, manteniendo el mismo estilo visual morado/Material3 que ya usamos. Comenta brevemente qué cambiaste en cada uno.
