@@ -3,9 +3,9 @@ package com.espiritu.tecsupfit.ui.navigation
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -53,7 +53,7 @@ fun MainScreen() {
                         onViewReservations = {
                             isConfirming = false
                             selectedClass = null
-                            selectedTab = 1 // Redirige a la pestaña Reservas
+                            selectedTab = 1
                         }
                     )
                 }
@@ -68,7 +68,7 @@ fun MainScreen() {
                     when (selectedTab) {
                         0 -> HomeScreen(onClassSelected = { selectedClass = it })
                         1 -> ReservationsScreen()
-                        2 -> HomeScreen(onClassSelected = { selectedClass = it }) // Rutinas
+                        2 -> HomeScreen(onClassSelected = { selectedClass = it })
                         3 -> ProfileScreen()
                     }
                 }
