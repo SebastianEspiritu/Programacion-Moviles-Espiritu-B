@@ -1,7 +1,9 @@
 package com.espiritu.navlab.navigation
 
 sealed class Screen(val route: String) {
-    //Desarrollado por Sebastián Espíritu
+    //Pantalla de inicio de sesión
+    object Login : Screen("login")
+
     //Pantalla de inicio
     object Home : Screen("home")
 
