@@ -15,7 +15,6 @@ fun TarjetaProducto(
     producto: Producto,
     modifier: Modifier = Modifier
 ) {
-    // Estado para controlar si el DropdownMenu está visible u oculto
     var expanded by remember { mutableStateOf(false) }
 
     Card(
@@ -32,7 +31,6 @@ fun TarjetaProducto(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icono genérico del producto
             Icon(
                 imageVector = Icons.Default.ShoppingBag,
                 contentDescription = null,
@@ -41,7 +39,6 @@ fun TarjetaProducto(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Información del producto
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = producto.nombre,
@@ -53,12 +50,31 @@ fun TarjetaProducto(
                 )
             }
 
-            // Box para posicionar el icono de 3 puntos y posteriormente el DropdownMenu
+            // Box que contiene el icono y el DropdownMenu desplegable
             Box {
                 IconButton(onClick = { expanded = true }) {
                     Icon(
                         imageVector = Icons.Default.MoreVert,
                         contentDescription = "Opciones"
+                    )
+                }
+
+                // Menu basico desplegable
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Favoritos") },
+                        onClick = { expanded = false }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Compartir") },
+                        onClick = { expanded = false }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Reportar") },
+                        onClick = { expanded = false }
                     )
                 }
             }
