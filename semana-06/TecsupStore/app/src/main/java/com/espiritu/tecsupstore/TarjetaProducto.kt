@@ -14,7 +14,6 @@ fun TarjetaProducto(
     producto: Producto,
     modifier: Modifier = Modifier
 ) {
-    // Estado local para controlar el desplegable (Hito 1)
     var expanded by remember { mutableStateOf(false) }
 
     Card(
@@ -42,12 +41,30 @@ fun TarjetaProducto(
                 )
             }
 
-            // Contenedor Box para anclar el botón de 3 puntos
             Box {
-                IconButton(onClick = { expanded = !expanded }) {
+                IconButton(onClick = { expanded = true }) {
                     Icon(
                         imageVector = Icons.Default.MoreVert,
                         contentDescription = "Opciones del producto"
+                    )
+                }
+
+                // Hito 2: DropdownMenu básico funcionando
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Favoritos") },
+                        onClick = { expanded = false }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Compartir") },
+                        onClick = { expanded = false }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Reportar") },
+                        onClick = { expanded = false }
                     )
                 }
             }
