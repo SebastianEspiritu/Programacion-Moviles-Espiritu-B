@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun TarjetaProducto(
     producto: Producto,
+    onOptionSelected: (String) -> Unit, // <--- Parámetro necesario para notificar la opción seleccionada
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -52,7 +53,6 @@ fun TarjetaProducto(
                     )
                 }
 
-                // DropdownMenu personalizado con íconos y divisores (Hito 3)
                 DropdownMenu(
                     expanded = expanded,
                     onDismissRequest = { expanded = false }
@@ -65,7 +65,10 @@ fun TarjetaProducto(
                                 contentDescription = "Favoritos"
                             )
                         },
-                        onClick = { expanded = false }
+                        onClick = {
+                            expanded = false
+                            onOptionSelected("Agregado a Favoritos: ${producto.nombre}")
+                        }
                     )
 
                     HorizontalDivider()
@@ -78,7 +81,10 @@ fun TarjetaProducto(
                                 contentDescription = "Compartir"
                             )
                         },
-                        onClick = { expanded = false }
+                        onClick = {
+                            expanded = false
+                            onOptionSelected("Compartiendo: ${producto.nombre}")
+                        }
                     )
 
                     HorizontalDivider()
@@ -91,7 +97,10 @@ fun TarjetaProducto(
                                 contentDescription = "Reportar"
                             )
                         },
-                        onClick = { expanded = false }
+                        onClick = {
+                            expanded = false
+                            onOptionSelected("Reportando: ${producto.nombre}")
+                        }
                     )
                 }
             }
