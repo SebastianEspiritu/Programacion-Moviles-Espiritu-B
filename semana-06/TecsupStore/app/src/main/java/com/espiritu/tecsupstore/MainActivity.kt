@@ -45,6 +45,7 @@ fun PantallaTienda() {
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // HITO 5: Estado de navegación entre pantallas
     var currentRoute by remember { mutableStateOf("Inicio") }
     var favoritosCount by remember { mutableIntStateOf(0) }
 
@@ -54,7 +55,7 @@ fun PantallaTienda() {
         favoritosCount = favoritosCount,
         onNavigate = { nuevaRuta ->
             currentRoute = nuevaRuta
-            scope.launch { drawerState.close() }
+            scope.launch { drawerState.close() } // Cierra el menú al hacer clic
         }
     ) {
         Scaffold(
@@ -71,7 +72,6 @@ fun PantallaTienda() {
                             )
                         }
                     },
-                    // Fondo y color de texto idénticos al del encabezado del drawer
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
                         titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -86,8 +86,9 @@ fun PantallaTienda() {
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
+                // HITO 5: Navegación dinámicamente según la opción elegida
                 when (currentRoute) {
-                    "Inicio", "Mis pedidos" -> {
+                    "Inicio" -> {
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxSize()
