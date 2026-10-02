@@ -2,6 +2,7 @@ package com.espiritu.tecsupstore
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
@@ -15,7 +16,9 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun TarjetaProducto(
     producto: Producto,
-    onOptionSelected: (String) -> Unit, // <--- Parámetro necesario para notificar la opción seleccionada
+    esFavorito: Boolean,
+    onToggleFavorito: (Producto) -> Unit,
+    onOptionSelected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -58,16 +61,19 @@ fun TarjetaProducto(
                     onDismissRequest = { expanded = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text("Favoritos") },
+                        text = {
+                            Text(if (esFavorito) "Quitar de Favoritos" else "Agregar a Favoritos")
+                        },
                         leadingIcon = {
                             Icon(
-                                imageVector = Icons.Default.FavoriteBorder,
-                                contentDescription = "Favoritos"
+                                imageVector = if (esFavorito) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = "Favoritos",
+                                tint = if (esFavorito) MaterialTheme.colorScheme.primary else LocalContentColor.current
                             )
                         },
                         onClick = {
                             expanded = false
-                            onOptionSelected("Agregado a Favoritos: ${producto.nombre}")
+                            onToggleFavorito(producto)
                         }
                     )
 
