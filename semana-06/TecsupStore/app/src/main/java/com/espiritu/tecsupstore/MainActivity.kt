@@ -35,27 +35,29 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaTienda() {
-    val productos = listOf(
-        Producto(1, "Audífonos", 89.0),
-        Producto(2, "Smartwatch", 199.0),
-        Producto(3, "Funda celular", 25.0)
-    )
+    val productos = remember {
+        listOf(
+            Producto(1, "Audífonos", 89.0),
+            Producto(2, "Smartwatch", 199.0),
+            Producto(3, "Funda celular", 25.0)
+        )
+    }
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // HITO 5: Estado de navegación entre pantallas
     var currentRoute by remember { mutableStateOf("Inicio") }
-    var favoritosCount by remember { mutableIntStateOf(0) }
+    // Conjunto de IDs seleccionados como favoritos
+    var favoritosIds by remember { mutableStateOf(setOf<Int>()) }
 
     AppDrawer(
         drawerState = drawerState,
         currentRoute = currentRoute,
-        favoritosCount = favoritosCount,
+        favoritosCount = favoritosIds.size, // Pasa el total al Badge del Drawer
         onNavigate = { nuevaRuta ->
             currentRoute = nuevaRuta
-            scope.launch { drawerState.close() } // Cierra el menú al hacer clic
+            scope.launch { drawerState.close() }
         }
     ) {
         Scaffold(
@@ -86,7 +88,6 @@ fun PantallaTienda() {
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-                // HITO 5: Navegación dinámicamente según la opción elegida
                 when (currentRoute) {
                     "Inicio" -> {
                         LazyColumn(
@@ -95,17 +96,70 @@ fun PantallaTienda() {
                                 .padding(16.dp)
                         ) {
                             items(productos) { producto ->
+                                val esFavorito = producto.id in favoritosIds
                                 TarjetaProducto(
                                     producto = producto,
-                                    onOptionSelected = { mensaje ->
-                                        if (mensaje.contains("Favoritos")) {
-                                            favoritosCount++
+                                    esFavorito = esFavorito,
+                                    onToggleFavorito = { p ->
+                                        val yaEsFavorito = p.id in favoritosIds
+                                        favoritosIds = if (yaEsFavorito) {
+                                            favoritosIds - p.id
+                                        } else {
+                                            favoritosIds + p.id
                                         }
+                                        val mensaje = if (yaEsFavorito) {
+                                            "Eliminado de Favoritos: ${p.nombre}"
+                                        } else {
+                                            "Agregado a Favoritos: ${p.nombre}"
+                                        }
+                                        scope.launch {
+                                            snackbarHostState.showSnackbar(mensaje)
+                                        }
+                                    },
+                                    onOptionSelected = { mensaje ->
                                         scope.launch {
                                             snackbarHostState.showSnackbar(mensaje)
                                         }
                                     }
                                 )
+                            }
+                        }
+                    }
+                    "Favoritos" -> {
+                        val listaFavoritos = productos.filter { it.id in favoritosIds }
+                        if (listaFavoritos.isEmpty()) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "No tienes productos en favoritos aún",
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                            }
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp)
+                            ) {
+                                items(listaFavoritos) { producto ->
+                                    TarjetaProducto(
+                                        producto = producto,
+                                        esFavorito = true,
+                                        onToggleFavorito = { p ->
+                                            favoritosIds = favoritosIds - p.id
+                                            scope.launch {
+                                                snackbarHostState.showSnackbar("Eliminado de Favoritos: ${p.nombre}")
+                                            }
+                                        },
+                                        onOptionSelected = { mensaje ->
+                                            scope.launch {
+                                                snackbarHostState.showSnackbar(mensaje)
+                                            }
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
