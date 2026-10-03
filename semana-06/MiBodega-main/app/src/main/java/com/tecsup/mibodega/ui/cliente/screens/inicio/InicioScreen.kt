@@ -177,6 +177,7 @@ private fun ChipCategoria(
     }
 }
 
+//HITO 4: NavigationBar
 @Composable
 private fun BarraInferior() {
     var seleccionado by remember { mutableStateOf(0) }
