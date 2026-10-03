@@ -47,6 +47,8 @@ import com.tecsup.mibodega.ui.theme.VerdeBodega
  * decide cuánto quiere; solo al tocar "Agregar al carrito" le avisa
  * a ClienteApp cuánto agregar.
  */
+
+//HITO 6: navegacion con parametro
 @Composable
 fun DetalleProductoScreen(
     producto: Producto,

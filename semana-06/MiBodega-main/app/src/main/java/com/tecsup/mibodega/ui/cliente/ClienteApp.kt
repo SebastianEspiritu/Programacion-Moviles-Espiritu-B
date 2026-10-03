@@ -100,6 +100,7 @@ fun ClienteApp() {
             )
         }
 
+        //HITO 6: navegacion con parametro
         composable(Rutas.CARRITO) {
             CarritoScreen(
                 carrito = carrito,
