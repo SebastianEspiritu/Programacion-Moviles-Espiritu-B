@@ -40,6 +40,8 @@ import com.tecsup.mibodega.ui.theme.VerdeBodega
  * Pantalla 1: Registro / Login (mockup "Cliente").
  * No sabe navegar sola: recibe qué hacer por parámetro (callbacks).
  */
+
+// HITO 2: implementar PantallaLogin y PantallaCrearCuenta con callbacks
 @Composable
 fun BienvenidaScreen(
     onRegistrarse: () -> Unit,
@@ -60,13 +62,9 @@ fun BienvenidaScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(Modifier.height(24.dp))
-
         IlustracionBodega()
-
         Spacer(Modifier.height(16.dp))
-
         TituloMiBodega()
-
         Spacer(Modifier.height(12.dp))
 
         Text(
@@ -93,9 +91,7 @@ fun BienvenidaScreen(
         )
 
         Spacer(Modifier.height(20.dp))
-
         PieTerminos(onTerminos = onTerminos)
-
         Spacer(Modifier.height(24.dp))
     }
 }
@@ -154,4 +150,3 @@ private fun BienvenidaPreview() {
         BienvenidaScreen({}, {}, {})
     }
 }
-
