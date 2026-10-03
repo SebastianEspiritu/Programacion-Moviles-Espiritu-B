@@ -123,7 +123,7 @@ fun ClienteApp() {
                     carrito = carrito.filterNot { it.producto.id == producto.id }
                 },
                 onContinuarPedido = { /* TODO: navegar a DatosEntregaScreen */ }
-            )
+            ) // Se conectará en el Hito 8 con DatosEntrega
         }
     }
 }

@@ -43,11 +43,6 @@ import com.tecsup.mibodega.ui.theme.VerdeBodega
 
 private const val COSTO_DELIVERY = 4.00
 
-/**
- * Pantalla 5: Mi carrito (mockup "Cliente").
- * No guarda estado propio: el carrito viene de ClienteApp y cualquier
- * cambio (sumar, restar, eliminar) se avisa hacia arriba con callbacks.
- */
 @Composable
 fun CarritoScreen(
     carrito: List<ItemCarrito>,
@@ -57,8 +52,10 @@ fun CarritoScreen(
     onEliminar: (Producto) -> Unit,
     onContinuarPedido: () -> Unit
 ) {
+    // HITO 7: CÁLCULO REACTIVO: Se recalculan automáticamente en cada recomposición
     val subtotal = carrito.sumOf { it.producto.precio * it.cantidad }
-    val total = subtotal + COSTO_DELIVERY
+    val delivery = if (carrito.isNotEmpty()) COSTO_DELIVERY else 0.0
+    val total = subtotal + delivery
 
     Column(
         modifier = Modifier
@@ -67,33 +64,46 @@ fun CarritoScreen(
     ) {
         EncabezadoCarrito(onVolver = onVolver)
 
-        LazyColumn(
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 20.dp),
-            contentPadding = PaddingValues(vertical = 8.dp)
-        ) {
-            items(carrito, key = { it.producto.id }) { item ->
-                FilaCarrito(
-                    item = item,
-                    onIncrementar = { onIncrementar(item.producto) },
-                    onDecrementar = { onDecrementar(item.producto) },
-                    onEliminar = { onEliminar(item.producto) }
+        if (carrito.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Tu carrito está vacío",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             }
-        }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 20.dp),
+                contentPadding = PaddingValues(vertical = 8.dp)
+            ) {
+                items(carrito, key = { it.producto.id }) { item ->
+                    FilaCarrito(
+                        item = item,
+                        onIncrementar = { onIncrementar(item.producto) },
+                        onDecrementar = { onDecrementar(item.producto) },
+                        onEliminar = { onEliminar(item.producto) }
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                }
+            }
 
-        ResumenYBoton(
-            subtotal = subtotal,
-            delivery = COSTO_DELIVERY,
-            total = total,
-            onContinuarPedido = onContinuarPedido
-        )
+            ResumenYBoton(
+                subtotal = subtotal,
+                delivery = delivery,
+                total = total,
+                onContinuarPedido = onContinuarPedido
+            )
+        }
     }
 }
-
-// Sub-composables PRIVADOS: solo los usa esta pantalla.
 
 @Composable
 private fun EncabezadoCarrito(onVolver: () -> Unit) {
@@ -125,7 +135,6 @@ private fun FilaCarrito(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Placeholder de imagen: reemplázalo por Image(painterResource(...))
         Box(
             modifier = Modifier
                 .size(56.dp)
@@ -225,9 +234,9 @@ private fun FilaResumen(etiqueta: String, valor: Double) {
 @Composable
 private fun CarritoPreview() {
     val carritoEjemplo = listOf(
-        ItemCarrito(listaProductosFake[4], 1), // Coca-Cola
-        ItemCarrito(listaProductosFake[0], 2), // Arroz Costeño
-        ItemCarrito(listaProductosFake[2], 1)  // Leche Gloria
+        ItemCarrito(listaProductosFake[4], 1),
+        ItemCarrito(listaProductosFake[0], 2),
+        ItemCarrito(listaProductosFake[2], 1)
     )
     BodegaTheme {
         CarritoScreen(
@@ -240,4 +249,3 @@ private fun CarritoPreview() {
         )
     }
 }
-
