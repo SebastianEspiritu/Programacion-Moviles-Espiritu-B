@@ -7,4 +7,3 @@ data class Producto(
     val precio: Double,
     val categoria: String
 )
-

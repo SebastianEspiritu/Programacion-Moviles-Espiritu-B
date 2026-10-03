@@ -60,9 +60,11 @@ fun InicioScreen(
     onProductoClick: (Producto) -> Unit,
     onAgregarProducto: (Producto) -> Unit
 ) {
+    // HITO 5: categorías con filtro
     var categoriaSeleccionada by remember { mutableStateOf(listaCategorias.first()) }
     var textoBusqueda by remember { mutableStateOf("") }
 
+    // HITO 5: categorías con filtro
     val productosFiltrados = productos.filter { producto ->
         val coincideCategoria = categoriaSeleccionada == "Todos" || producto.categoria == categoriaSeleccionada
         val coincideBusqueda = producto.nombre.contains(textoBusqueda, ignoreCase = true)
@@ -125,6 +127,7 @@ fun InicioScreen(
                     modifier = Modifier.padding(top = 8.dp)
                 )
 
+                // HITO 5: LazyRow de categorías con filtro
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(vertical = 8.dp)

@@ -6,6 +6,8 @@ package com.tecsup.mibodega.ui.cliente.modelo
  * un Repository real, pero las pantallas no cambian porque ya
  * reciben una List<Producto> como parámetro.
  */
+
+//HITO 3: productos de ejemplo.
 val listaCategorias = listOf("Todos", "Bebidas", "Abarrotes", "Snacks")
 
 val listaProductosFake = listOf(
@@ -45,4 +47,3 @@ val listaProductosFake = listOf(
         categoria = "Bebidas"
     )
 )
-
