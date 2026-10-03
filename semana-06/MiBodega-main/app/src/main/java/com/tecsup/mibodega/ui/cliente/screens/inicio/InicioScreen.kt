@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
@@ -61,7 +62,6 @@ fun InicioScreen(
     var categoriaSeleccionada by remember { mutableStateOf(listaCategorias.first()) }
     var textoBusqueda by remember { mutableStateOf("") }
 
-    // PASO 2: Lógica de doble filtrado en tiempo real (Categoría AND Texto de Búsqueda)
     val productosFiltrados = productos.filter { producto ->
         val coincideCategoria = categoriaSeleccionada == "Todos" || producto.categoria == categoriaSeleccionada
         val coincideBusqueda = producto.nombre.contains(textoBusqueda, ignoreCase = true)
@@ -106,6 +106,14 @@ fun InicioScreen(
                         .padding(top = 8.dp),
                     placeholder = { Text("Buscar productos...") },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
+                    // PASO 3: Botón para limpiar el texto de búsqueda
+                    trailingIcon = {
+                        if (textoBusqueda.isNotEmpty()) {
+                            IconButton(onClick = { textoBusqueda = "" }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Limpiar búsqueda")
+                            }
+                        }
+                    },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -146,12 +154,24 @@ fun InicioScreen(
                 )
             }
 
-            items(productosFiltrados, key = { it.id }) { producto ->
-                ProductoCard(
-                    producto = producto,
-                    onClick = { onProductoClick(producto) },
-                    onAgregar = { onAgregarProducto(producto) }
-                )
+            // PASO 3: Manejo de lista vacía cuando no hay coincidencias
+            if (productosFiltrados.isEmpty()) {
+                item {
+                    Text(
+                        text = "No se encontraron productos para \"$textoBusqueda\"",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+                }
+            } else {
+                items(productosFiltrados, key = { it.id }) { producto ->
+                    ProductoCard(
+                        producto = producto,
+                        onClick = { onProductoClick(producto) },
+                        onAgregar = { onAgregarProducto(producto) }
+                    )
+                }
             }
         }
     }
