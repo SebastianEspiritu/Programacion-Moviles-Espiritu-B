@@ -59,11 +59,13 @@ fun InicioScreen(
     onAgregarProducto: (Producto) -> Unit
 ) {
     var categoriaSeleccionada by remember { mutableStateOf(listaCategorias.first()) }
-    // PASO 1: Estado para capturar la búsqueda
     var textoBusqueda by remember { mutableStateOf("") }
 
+    // PASO 2: Lógica de doble filtrado en tiempo real (Categoría AND Texto de Búsqueda)
     val productosFiltrados = productos.filter { producto ->
-        categoriaSeleccionada == "Todos" || producto.categoria == categoriaSeleccionada
+        val coincideCategoria = categoriaSeleccionada == "Todos" || producto.categoria == categoriaSeleccionada
+        val coincideBusqueda = producto.nombre.contains(textoBusqueda, ignoreCase = true)
+        coincideCategoria && coincideBusqueda
     }
 
     Scaffold(
@@ -95,7 +97,6 @@ fun InicioScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(bottom = 16.dp)
         ) {
-            // PASO 1: Componente visual de Búsqueda
             item {
                 OutlinedTextField(
                     value = textoBusqueda,
