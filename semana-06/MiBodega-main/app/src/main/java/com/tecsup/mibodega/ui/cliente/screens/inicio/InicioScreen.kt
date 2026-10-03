@@ -3,7 +3,6 @@ package com.tecsup.mibodega.ui.cliente.screens.inicio
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -50,7 +49,6 @@ import com.tecsup.mibodega.ui.theme.BodegaTheme
 import com.tecsup.mibodega.ui.theme.GrisClaro
 import com.tecsup.mibodega.ui.theme.VerdeBodega
 
-//HITO 3: PantallaInicio con LazyColumn
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InicioScreen(
@@ -60,15 +58,12 @@ fun InicioScreen(
     onProductoClick: (Producto) -> Unit,
     onAgregarProducto: (Producto) -> Unit
 ) {
-    // HITO 5: categorías con filtro
     var categoriaSeleccionada by remember { mutableStateOf(listaCategorias.first()) }
+    // PASO 1: Estado para capturar la búsqueda
     var textoBusqueda by remember { mutableStateOf("") }
 
-    // HITO 5: categorías con filtro
     val productosFiltrados = productos.filter { producto ->
-        val coincideCategoria = categoriaSeleccionada == "Todos" || producto.categoria == categoriaSeleccionada
-        val coincideBusqueda = producto.nombre.contains(textoBusqueda, ignoreCase = true)
-        coincideCategoria && coincideBusqueda
+        categoriaSeleccionada == "Todos" || producto.categoria == categoriaSeleccionada
     }
 
     Scaffold(
@@ -100,6 +95,7 @@ fun InicioScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(bottom = 16.dp)
         ) {
+            // PASO 1: Componente visual de Búsqueda
             item {
                 OutlinedTextField(
                     value = textoBusqueda,
@@ -108,7 +104,7 @@ fun InicioScreen(
                         .fillMaxWidth()
                         .padding(top = 8.dp),
                     placeholder = { Text("Buscar productos...") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -127,7 +123,6 @@ fun InicioScreen(
                     modifier = Modifier.padding(top = 8.dp)
                 )
 
-                // HITO 5: LazyRow de categorías con filtro
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(vertical = 8.dp)
@@ -180,7 +175,6 @@ private fun ChipCategoria(
     }
 }
 
-//HITO 4: NavigationBar
 @Composable
 private fun BarraInferior() {
     var seleccionado by remember { mutableStateOf(0) }
