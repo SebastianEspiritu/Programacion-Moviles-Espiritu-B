@@ -1,5 +1,6 @@
 package com.tecsup.mibodega.ui.cliente.screens.entrega
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -32,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.tecsup.mibodega.ui.componentes.BotonPrimario
@@ -42,11 +44,18 @@ fun DatosEntregaScreen(
     onVolver: () -> Unit,
     onConfirmarPedido: () -> Unit
 ) {
+    val context = LocalContext.current
+
     var nombre by remember { mutableStateOf("") }
     var telefono by remember { mutableStateOf("") }
     var direccion by remember { mutableStateOf("") }
     var referencia by remember { mutableStateOf("") }
     var metodoPago by remember { mutableStateOf("Efectivo") }
+
+    // Estados de error
+    var errorNombre by remember { mutableStateOf(false) }
+    var errorTelefono by remember { mutableStateOf(false) }
+    var errorDireccion by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -82,9 +91,16 @@ fun DatosEntregaScreen(
 
                 OutlinedTextField(
                     value = nombre,
-                    onValueChange = { nombre = it },
+                    onValueChange = {
+                        nombre = it
+                        if (it.isNotBlank()) errorNombre = false
+                    },
                     label = { Text("Nombre completo") },
                     leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                    isError = errorNombre,
+                    supportingText = if (errorNombre) {
+                        { Text("Por favor, ingresa tu nombre", color = MaterialTheme.colorScheme.error) }
+                    } else null,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -93,9 +109,16 @@ fun DatosEntregaScreen(
 
                 OutlinedTextField(
                     value = telefono,
-                    onValueChange = { telefono = it },
+                    onValueChange = {
+                        telefono = it
+                        if (it.isNotBlank()) errorTelefono = false
+                    },
                     label = { Text("Teléfono de contacto") },
                     leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null) },
+                    isError = errorTelefono,
+                    supportingText = if (errorTelefono) {
+                        { Text("Por favor, ingresa tu teléfono", color = MaterialTheme.colorScheme.error) }
+                    } else null,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -112,9 +135,16 @@ fun DatosEntregaScreen(
 
                 OutlinedTextField(
                     value = direccion,
-                    onValueChange = { direccion = it },
+                    onValueChange = {
+                        direccion = it
+                        if (it.isNotBlank()) errorDireccion = false
+                    },
                     label = { Text("Dirección (Calle, Av, Jr)") },
                     leadingIcon = { Icon(Icons.Default.Home, contentDescription = null) },
+                    isError = errorDireccion,
+                    supportingText = if (errorDireccion) {
+                        { Text("Por favor, ingresa tu dirección", color = MaterialTheme.colorScheme.error) }
+                    } else null,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -166,7 +196,25 @@ fun DatosEntregaScreen(
 
             BotonPrimario(
                 texto = "Confirmar pedido",
-                onClick = onConfirmarPedido
+                onClick = {
+                    val esNombreValido = nombre.isNotBlank()
+                    val esTelefonoValido = telefono.isNotBlank()
+                    val esDireccionValida = direccion.isNotBlank()
+
+                    errorNombre = !esNombreValido
+                    errorTelefono = !esTelefonoValido
+                    errorDireccion = !esDireccionValida
+
+                    if (esNombreValido && esTelefonoValido && esDireccionValida) {
+                        onConfirmarPedido()
+                    } else {
+                        Toast.makeText(
+                            context,
+                            "Completa los datos requeridos antes de continuar",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
             )
         }
     }
