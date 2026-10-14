@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -51,4 +52,23 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
+
+    // Iconos de Material Design
+    implementation("androidx.compose.material:material-icons-extended")
+
+    // Navegación entre pantallas
+    implementation("androidx.navigation:navigation-compose:2.8.2")
+
+    // ViewModel para Jetpack Compose
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.6")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.6")
+
+    // Base de datos Room
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+
+    // Preferencias con DataStore
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    ksp("androidx.room:room-compiler:2.6.1")
 }
