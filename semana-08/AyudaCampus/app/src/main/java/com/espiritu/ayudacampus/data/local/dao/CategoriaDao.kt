@@ -26,7 +26,7 @@ interface CategoriaDao {
     suspend fun insertar(c: Categoria): Long
 
     @Insert
-    suspend fun insertarTodas(lista: List<Categoria>)
+    suspend fun insertarTodas(lista: List<Categoria>): List<Long>
 
     @Update
     suspend fun actualizar(c: Categoria)
