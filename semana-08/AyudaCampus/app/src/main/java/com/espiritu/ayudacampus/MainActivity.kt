@@ -16,6 +16,10 @@ class MainActivity : ComponentActivity() {
         val app = application as AyudaApp
         val factory = AyudaViewModelFactory(app.repository, app.preferencias, app::esperarInicializacion)
         val sesion = ViewModelProvider(this, factory)[SesionViewModel::class.java]
-        setContent { NavAyuda(sesion) }
+        setContent {
+            NavAyuda(sesion) { usuario ->
+                AyudaViewModelFactory(app.repository, app.preferencias, app::esperarInicializacion, usuario)
+            }
+        }
     }
 }

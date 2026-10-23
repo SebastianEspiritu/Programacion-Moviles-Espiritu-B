@@ -5,4 +5,8 @@ object Rutas {
     const val LOGIN = "login"
     const val MIS_TICKETS = "cliente/tickets"
     const val PANEL = "soporte/panel"
+    const val NUEVO = "cliente/nuevo"
+    const val PERFIL = "cliente/perfil"
+    const val DETALLE = "cliente/ticket/{ticketId}"
+    fun detalle(ticketId: Int) = "cliente/ticket/$ticketId"
 }
