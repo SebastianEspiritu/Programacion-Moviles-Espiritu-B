@@ -1,58 +1,35 @@
 package com.espiritu.ayudacampus.ui.theme
 
-import android.app.Activity
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
-
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
-
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
-)
+import androidx.compose.ui.graphics.Color
+import com.espiritu.ayudacampus.model.Rol
 
 @Composable
 fun AyudaCampusTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    rol: Rol = Rol.CLIENTE,
+    darkTheme: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+    val estudiante = rol == Rol.CLIENTE
+    val colores = if (darkTheme) {
+        darkColorScheme(
+            primary = if (estudiante) Color(0xFF67E8F9) else Color(0xFFC4B5FD),
+            onPrimary = if (estudiante) Color(0xFF003744) else Color(0xFF2E1065),
+            primaryContainer = if (estudiante) Color(0xFF164E63) else Color(0xFF4C1D95),
+            onPrimaryContainer = if (estudiante) EstudianteContenedor else SoporteContenedor
+        )
+    } else {
+        lightColorScheme(
+            primary = if (estudiante) EstudiantePrimario else SoportePrimario,
+            onPrimary = Color.White,
+            primaryContainer = if (estudiante) EstudianteContenedor else SoporteContenedor,
+            onPrimaryContainer = if (estudiante) Color(0xFF164E63) else Color(0xFF4C1D95),
+            background = if (estudiante) EstudianteFondo else SoporteFondo,
+            surface = if (estudiante) EstudianteFondo else SoporteFondo
+        )
     }
-
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    MaterialTheme(colorScheme = colores, typography = Typography, content = content)
 }

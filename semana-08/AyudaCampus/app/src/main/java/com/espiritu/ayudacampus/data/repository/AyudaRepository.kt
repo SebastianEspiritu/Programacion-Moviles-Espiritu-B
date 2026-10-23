@@ -12,6 +12,7 @@ interface AyudaRepository {
 
     // Usuarios
     suspend fun login(correo: String, clave: String): Usuario?
+    suspend fun obtenerUsuarioPorId(id: Int): Usuario?
 
     // Categorías
     fun observarCategorias(): Flow<List<Categoria>>

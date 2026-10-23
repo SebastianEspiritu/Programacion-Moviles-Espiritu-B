@@ -14,9 +14,18 @@ private val Context.dataStore by preferencesDataStore(
     name = "ajustes"
 )
 
+data class SesionGuardada(val rol: String, val usuarioId: Int)
+
+interface PreferenciasSesion {
+    val sesion: Flow<SesionGuardada>
+    val modoOscuro: Flow<Boolean>
+    suspend fun guardarSesion(rol: String, usuarioId: Int)
+    suspend fun cerrarSesion()
+}
+
 class PreferenciasStore(
     private val context: Context
-) {
+) : PreferenciasSesion {
 
     private object Claves {
         val PERFIL_ACTIVO = stringPreferencesKey("perfilActivo")
@@ -28,6 +37,10 @@ class PreferenciasStore(
 
     // LECTURA DE PREFERENCIAS
 
+    override val sesion: Flow<SesionGuardada> = context.dataStore.data.map {
+        SesionGuardada(it[Claves.PERFIL_ACTIVO] ?: "", it[Claves.USUARIO_ID] ?: 0)
+    }
+
     val perfilActivo: Flow<String> = context.dataStore.data.map {
             preferencias ->
         preferencias[Claves.PERFIL_ACTIVO] ?: ""
@@ -38,7 +51,7 @@ class PreferenciasStore(
         preferencias[Claves.USUARIO_ID] ?: 0
     }
 
-    val modoOscuro: Flow<Boolean> = context.dataStore.data.map {
+    override val modoOscuro: Flow<Boolean> = context.dataStore.data.map {
             preferencias ->
         preferencias[Claves.MODO_OSCURO] ?: false
     }
@@ -55,7 +68,7 @@ class PreferenciasStore(
 
     // GUARDAR SESIÓN
 
-    suspend fun guardarSesion(
+    override suspend fun guardarSesion(
         rol: String,
         usuarioId: Int
     ) {
@@ -95,7 +108,7 @@ class PreferenciasStore(
 
     // CERRAR SESIÓN SIN BORRAR LOS AJUSTES
 
-    suspend fun cerrarSesion() {
+    override suspend fun cerrarSesion() {
         context.dataStore.edit { preferencias ->
             preferencias.remove(Claves.PERFIL_ACTIVO)
             preferencias.remove(Claves.USUARIO_ID)

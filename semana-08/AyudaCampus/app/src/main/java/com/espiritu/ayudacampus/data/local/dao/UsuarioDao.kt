@@ -16,6 +16,9 @@ interface UsuarioDao {
         clave: String
     ): Usuario?
 
+    @Query("SELECT * FROM usuarios WHERE id = :id LIMIT 1")
+    suspend fun obtenerPorId(id: Int): Usuario?
+
     @Insert
     suspend fun insertarTodos(lista: List<Usuario>): List<Long>
 
