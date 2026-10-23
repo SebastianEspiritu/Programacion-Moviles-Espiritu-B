@@ -36,14 +36,13 @@ abstract class AyudaDatabase : RoomDatabase() {
 
         fun obtener(context: Context): AyudaDatabase {
             return INSTANCE ?: synchronized(this) {
-                val instancia = Room.databaseBuilder(
+                INSTANCE ?: Room.databaseBuilder(
                     context.applicationContext,
                     AyudaDatabase::class.java,
                     "ayudacampus.db"
-                ).build()
-
-                INSTANCE = instancia
-                instancia
+                ).build().also { instancia ->
+                    INSTANCE = instancia
+                }
             }
         }
     }
