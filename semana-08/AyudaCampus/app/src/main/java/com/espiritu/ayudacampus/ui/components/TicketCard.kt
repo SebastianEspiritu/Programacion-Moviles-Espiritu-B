@@ -3,9 +3,6 @@ package com.espiritu.ayudacampus.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -19,14 +16,7 @@ import java.util.Date
 @Composable
 fun TicketCard(detalle: TicketConDetalle, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val ticket = detalle.ticket
-    val icono = when (detalle.categoria.icono) {
-        "pc" -> Icons.Default.Computer
-        "code" -> Icons.Default.Code
-        "wifi" -> Icons.Default.Wifi
-        "key" -> Icons.Default.Key
-        "printer" -> Icons.Default.Print
-        else -> Icons.AutoMirrored.Filled.Label
-    }
+    val icono = iconoCategoria(detalle.categoria.icono)
     Card(onClick = onClick, modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {

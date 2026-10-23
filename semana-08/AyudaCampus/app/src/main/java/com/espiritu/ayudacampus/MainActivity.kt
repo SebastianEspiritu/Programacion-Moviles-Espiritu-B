@@ -14,11 +14,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val app = application as AyudaApp
-        val factory = AyudaViewModelFactory(app.repository, app.preferencias, app::esperarInicializacion)
+        val factory = AyudaViewModelFactory(app.repository, app.preferencias, app.preferencias.recibirTickets, app::esperarInicializacion)
         val sesion = ViewModelProvider(this, factory)[SesionViewModel::class.java]
         setContent {
             NavAyuda(sesion) { usuario ->
-                AyudaViewModelFactory(app.repository, app.preferencias, app::esperarInicializacion, usuario)
+                AyudaViewModelFactory(app.repository, app.preferencias, app.preferencias.recibirTickets, app::esperarInicializacion, usuario)
             }
         }
     }

@@ -15,11 +15,16 @@ fun AyudaTextField(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    visualTransformation: VisualTransformation = VisualTransformation.None
+    visualTransformation: VisualTransformation = VisualTransformation.None,
+    singleLine: Boolean = true,
+    minLines: Int = 1,
+    error: String? = null
 ) {
     OutlinedTextField(
         value = valor, onValueChange = onValueChange, label = { Text(etiqueta) },
-        modifier = modifier, enabled = enabled, singleLine = true,
+        modifier = modifier, enabled = enabled, singleLine = singleLine, minLines = minLines,
+        isError = error != null,
+        supportingText = error?.let { mensaje -> { Text(mensaje) } },
         keyboardOptions = keyboardOptions, visualTransformation = visualTransformation
     )
 }

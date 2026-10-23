@@ -22,6 +22,8 @@ import com.espiritu.ayudacampus.data.local.entity.Usuario
 import com.espiritu.ayudacampus.viewmodel.AyudaViewModelFactory
 import com.espiritu.ayudacampus.viewmodel.MisTicketsViewModel
 import com.espiritu.ayudacampus.ui.cliente.MisTicketsScreen
+import com.espiritu.ayudacampus.ui.cliente.NuevoTicketScreen
+import com.espiritu.ayudacampus.viewmodel.NuevoTicketViewModel
 import com.espiritu.ayudacampus.model.Rol
 import com.espiritu.ayudacampus.ui.cliente.LoginScreen
 import com.espiritu.ayudacampus.ui.cliente.SplashScreen
@@ -87,7 +89,19 @@ fun NavAyuda(vm: SesionViewModel, fabricaTickets: (Usuario) -> AyudaViewModelFac
                             { nav.navigate(Rutas.detalle(it)) })
                     }
                 }
-                composable(Rutas.NUEVO) { DestinoPendiente("Nuevo ticket", "El formulario estará disponible en el siguiente paso.") }
+                composable(Rutas.NUEVO) {
+                    usuario?.takeIf { it.rol == Rol.CLIENTE.name }?.let { estudiante ->
+                        val nuevoVm: NuevoTicketViewModel = viewModel(
+                            key = "nuevoTicket-${estudiante.id}", factory = fabricaTickets(estudiante))
+                        NuevoTicketScreen(nuevoVm) {
+                            // Recrear la lista limpia filtros y posición: el ticket nuevo aparece primero.
+                            nav.navigate(Rutas.MIS_TICKETS) {
+                                popUpTo(Rutas.MIS_TICKETS) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    }
+                }
                 composable(Rutas.PERFIL) { DestinoPendiente("Perfil", "La pantalla de perfil estará disponible más adelante.") }
                 composable(Rutas.DETALLE, arguments = listOf(navArgument("ticketId") { type = NavType.IntType })) { entradaDetalle ->
                     DestinoPendiente("Ticket #${entradaDetalle.arguments?.getInt("ticketId")}",
