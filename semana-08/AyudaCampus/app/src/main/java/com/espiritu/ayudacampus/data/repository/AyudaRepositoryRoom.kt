@@ -10,6 +10,8 @@ import com.espiritu.ayudacampus.model.ConteoCategoria
 import com.espiritu.ayudacampus.model.EstadoTicket
 import com.espiritu.ayudacampus.model.Prioridad
 import kotlinx.coroutines.flow.Flow
+import androidx.room.withTransaction
+import com.espiritu.ayudacampus.model.ICONOS_CATEGORIA
 
 class AyudaRepositoryRoom(
     private val db: AyudaDatabase
@@ -41,15 +43,25 @@ class AyudaRepositoryRoom(
     }
 
     override suspend fun guardarCategoria(c: Categoria) {
-        if (c.id == 0) {
-            categoriaDao.insertar(c)
-        } else {
-            categoriaDao.actualizar(c)
+        val nombre = c.nombre.trim()
+        require(nombre.isNotEmpty()) { "El nombre es obligatorio." }
+        require(c.icono in ICONOS_CATEGORIA) { "Selecciona un icono válido." }
+        db.withTransaction {
+            val categorias = categoriaDao.obtenerTodas()
+            if (c.id != 0 && categorias.none { it.id == c.id }) throw CategoriaNoExisteException()
+            if (categorias.any { it.id != c.id && it.nombre.trim().equals(nombre, ignoreCase = true) }) {
+                throw CategoriaDuplicadaException()
+            }
+            if (c.id == 0) categoriaDao.insertar(c.copy(nombre = nombre))
+            else categoriaDao.actualizar(c.copy(nombre = nombre))
         }
     }
 
     override suspend fun eliminarCategoria(c: Categoria) {
-        categoriaDao.eliminar(c)
+        db.withTransaction {
+            if (ticketDao.contarPorCategoriaId(c.id) > 0) throw CategoriaConTicketsException()
+            categoriaDao.eliminar(c)
+        }
     }
 
     override suspend fun cambiarActiva(
@@ -113,6 +125,16 @@ class AyudaRepositoryRoom(
         ticketDao.actualizarPrioridad(ticketId, prioridad.name)
     }
 
+    override suspend fun guardarAtencion(ticketId: Int, estado: EstadoTicket, prioridad: Prioridad) {
+        require(estado != EstadoTicket.CERRADO) { "Solo el estudiante puede cerrar el ticket." }
+        db.withTransaction {
+            val ticket = requireNotNull(ticketDao.obtenerPorId(ticketId)) { "El ticket ya no existe." }
+            if (ticket.estado == EstadoTicket.CERRADO.name) throw TicketCerradoException()
+            ticketDao.actualizarEstado(ticketId, estado.name)
+            ticketDao.actualizarPrioridad(ticketId, prioridad.name)
+        }
+    }
+
     override suspend fun cerrarConCalificacion(
         ticketId: Int,
         calificacion: Int
@@ -150,7 +172,11 @@ class AyudaRepositoryRoom(
             fecha = System.currentTimeMillis()
         )
 
-        ticketDao.insertarComentario(comentario)
+        db.withTransaction {
+            val ticket = requireNotNull(ticketDao.obtenerPorId(ticketId)) { "El ticket ya no existe." }
+            if (ticket.estado == EstadoTicket.CERRADO.name) throw TicketCerradoException()
+            ticketDao.insertarComentario(comentario)
+        }
     }
 
     // PANEL DE SOPORTE

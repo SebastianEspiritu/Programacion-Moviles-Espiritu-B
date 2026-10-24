@@ -22,6 +22,9 @@ interface CategoriaDao {
     @Query("SELECT COUNT(*) FROM categorias")
     suspend fun contar(): Int
 
+    @Query("SELECT * FROM categorias ORDER BY nombre")
+    suspend fun obtenerTodas(): List<Categoria>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertar(c: Categoria): Long
 

@@ -16,4 +16,6 @@ object Rutas {
     const val ATENDER = "soporte/ticket/{ticketId}"
     fun bandeja(alertas: Boolean = false) = "soporte/tickets?alertas=$alertas"
     fun atender(ticketId: Int) = "soporte/ticket/$ticketId"
+    const val FORMULARIO_CATEGORIA = "soporte/categoria?categoriaId={categoriaId}"
+    fun categoria(id: Int? = null) = if (id == null) "soporte/categoria" else "soporte/categoria?categoriaId=$id"
 }

@@ -39,6 +39,11 @@ import com.espiritu.ayudacampus.viewmodel.PanelSoporteViewModel
 import com.espiritu.ayudacampus.viewmodel.BandejaViewModel
 import com.espiritu.ayudacampus.ui.soporte.PanelSoporteScreen
 import com.espiritu.ayudacampus.ui.soporte.BandejaScreen
+import com.espiritu.ayudacampus.ui.soporte.AtenderTicketScreen
+import com.espiritu.ayudacampus.ui.soporte.CategoriasScreen
+import com.espiritu.ayudacampus.ui.soporte.FormularioCategoriaScreen
+import com.espiritu.ayudacampus.viewmodel.AtenderViewModel
+import com.espiritu.ayudacampus.viewmodel.CategoriasViewModel
 
 @Composable
 fun NavAyuda(vm: SesionViewModel, fabricaTickets: (Usuario) -> AyudaViewModelFactory) {
@@ -84,14 +89,15 @@ fun NavAyuda(vm: SesionViewModel, fabricaTickets: (Usuario) -> AyudaViewModelFac
                     }
                 }
             }
-            if (usuario?.rol == Rol.ADMIN.name && ruta in listOf(Rutas.PANEL, Rutas.BANDEJA_RUTA, Rutas.CATEGORIAS, Rutas.AJUSTES, Rutas.ATENDER)) {
+            if (usuario?.rol == Rol.ADMIN.name && ruta in listOf(Rutas.PANEL, Rutas.BANDEJA_RUTA, Rutas.CATEGORIAS, Rutas.AJUSTES, Rutas.ATENDER, Rutas.FORMULARIO_CATEGORIA)) {
                 NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                     listOf(Triple(Rutas.PANEL, "Panel", Icons.Default.Dashboard),
                         Triple(Rutas.BANDEJA, "Tickets", Icons.AutoMirrored.Filled.List),
                         Triple(Rutas.CATEGORIAS, "Categorías", Icons.Default.Category),
                         Triple(Rutas.AJUSTES, "Ajustes", Icons.Default.Settings)).forEach { (destino, texto, icono) ->
                         NavigationBarItem(selected = ruta == destino ||
-                            (destino == Rutas.BANDEJA && ruta in listOf(Rutas.BANDEJA_RUTA, Rutas.ATENDER)), onClick = {
+                            (destino == Rutas.BANDEJA && ruta in listOf(Rutas.BANDEJA_RUTA, Rutas.ATENDER)) ||
+                            (destino == Rutas.CATEGORIAS && ruta == Rutas.FORMULARIO_CATEGORIA), onClick = {
                             nav.navigate(destino) {
                                 popUpTo(Rutas.PANEL) { saveState = true }
                                 launchSingleTop = true
@@ -155,15 +161,26 @@ fun NavAyuda(vm: SesionViewModel, fabricaTickets: (Usuario) -> AyudaViewModelFac
                     }
                 }
                 composable(Rutas.CATEGORIAS) {
-                    SoloSoporte(usuario) { DestinoPendiente("Categorías", "La gestión de categorías estará disponible en el siguiente paso.") }
+                    SoloSoporte(usuario) { soporte ->
+                        val categoriasVm: CategoriasViewModel = viewModel(factory = fabricaTickets(soporte))
+                        CategoriasScreen(categoriasVm, { nav.navigate(Rutas.categoria(it)) }, { nav.navigate(Rutas.categoria()) })
+                    }
+                }
+                composable(Rutas.FORMULARIO_CATEGORIA, arguments = listOf(navArgument("categoriaId") { type = NavType.IntType; defaultValue = 0 })) { entradaCategoria ->
+                    SoloSoporte(usuario) { soporte ->
+                        val id = entradaCategoria.arguments?.getInt("categoriaId")?.takeUnless { it == 0 }
+                        val formularioVm: CategoriasViewModel = viewModel(factory = fabricaTickets(soporte).paraCategoria(id))
+                        FormularioCategoriaScreen(formularioVm, { nav.popBackStack() }, { nav.popBackStack() })
+                    }
                 }
                 composable(Rutas.AJUSTES) {
                     SoloSoporte(usuario) { DestinoPendiente("Ajustes", "Los ajustes estarán disponibles más adelante.") }
                 }
                 composable(Rutas.ATENDER, arguments = listOf(navArgument("ticketId") { type = NavType.IntType })) { entradaAtender ->
-                    SoloSoporte(usuario) {
-                        DestinoPendiente("Atender ticket #${entradaAtender.arguments?.getInt("ticketId")}",
-                            "La atención de tickets estará disponible en el siguiente paso.")
+                    SoloSoporte(usuario) { soporte ->
+                        val id = requireNotNull(entradaAtender.arguments).getInt("ticketId")
+                        val atenderVm: AtenderViewModel = viewModel(factory = fabricaTickets(soporte).paraDetalle(id))
+                        AtenderTicketScreen(atenderVm) { nav.popBackStack() }
                     }
                 }
             }

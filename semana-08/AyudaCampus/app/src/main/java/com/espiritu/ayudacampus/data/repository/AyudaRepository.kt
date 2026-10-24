@@ -37,6 +37,7 @@ interface AyudaRepository {
 
     suspend fun cambiarEstado(ticketId: Int, estado: EstadoTicket)
     suspend fun cambiarPrioridad(ticketId: Int, prioridad: Prioridad)
+    suspend fun guardarAtencion(ticketId: Int, estado: EstadoTicket, prioridad: Prioridad)
     suspend fun cerrarConCalificacion(ticketId: Int, calificacion: Int)
     suspend fun reabrir(ticketId: Int)
     suspend fun agregarComentario(ticketId: Int, autor: Usuario, texto: String)

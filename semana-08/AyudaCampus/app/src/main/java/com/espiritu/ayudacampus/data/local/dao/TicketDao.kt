@@ -13,6 +13,12 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface TicketDao {
 
+    @Query("SELECT * FROM tickets WHERE id = :id LIMIT 1")
+    suspend fun obtenerPorId(id: Int): Ticket?
+
+    @Query("SELECT COUNT(*) FROM tickets WHERE categoriaId = :categoriaId")
+    suspend fun contarPorCategoriaId(categoriaId: Int): Int
+
     // CREACIÓN
     @Insert
     suspend fun insertarTicket(t: Ticket): Long
