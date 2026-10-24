@@ -24,6 +24,8 @@ import com.espiritu.ayudacampus.viewmodel.MisTicketsViewModel
 import com.espiritu.ayudacampus.ui.cliente.MisTicketsScreen
 import com.espiritu.ayudacampus.ui.cliente.NuevoTicketScreen
 import com.espiritu.ayudacampus.viewmodel.NuevoTicketViewModel
+import com.espiritu.ayudacampus.viewmodel.DetalleTicketViewModel
+import com.espiritu.ayudacampus.ui.cliente.DetalleTicketScreen
 import com.espiritu.ayudacampus.model.Rol
 import com.espiritu.ayudacampus.ui.cliente.LoginScreen
 import com.espiritu.ayudacampus.ui.cliente.SplashScreen
@@ -61,7 +63,7 @@ fun NavAyuda(vm: SesionViewModel, fabricaTickets: (Usuario) -> AyudaViewModelFac
                     listOf(Triple(Rutas.MIS_TICKETS, "Tickets", Icons.AutoMirrored.Filled.List),
                         Triple(Rutas.NUEVO, "Nuevo", Icons.Default.Add),
                         Triple(Rutas.PERFIL, "Perfil", Icons.Default.Person)).forEach { (destino, texto, icono) ->
-                        NavigationBarItem(selected = ruta == destino, onClick = {
+                        NavigationBarItem(selected = ruta == destino || (destino == Rutas.MIS_TICKETS && ruta == Rutas.DETALLE), onClick = {
                             nav.navigate(destino) {
                                 popUpTo(Rutas.MIS_TICKETS) { saveState = true }
                                 launchSingleTop = true
@@ -104,8 +106,12 @@ fun NavAyuda(vm: SesionViewModel, fabricaTickets: (Usuario) -> AyudaViewModelFac
                 }
                 composable(Rutas.PERFIL) { DestinoPendiente("Perfil", "La pantalla de perfil estará disponible más adelante.") }
                 composable(Rutas.DETALLE, arguments = listOf(navArgument("ticketId") { type = NavType.IntType })) { entradaDetalle ->
-                    DestinoPendiente("Ticket #${entradaDetalle.arguments?.getInt("ticketId")}",
-                        "El detalle estará disponible más adelante.")
+                    usuario?.takeIf { it.rol == Rol.CLIENTE.name }?.let { estudiante ->
+                        val id = requireNotNull(entradaDetalle.arguments).getInt("ticketId")
+                        val detalleVm: DetalleTicketViewModel = viewModel(
+                            key = "detalle-${estudiante.id}-$id", factory = fabricaTickets(estudiante).paraDetalle(id))
+                        DetalleTicketScreen(detalleVm) { nav.popBackStack() }
+                    }
                 }
                 composable(Rutas.PANEL) {
                     InicioPerfil("Panel de soporte", usuario?.nombre.orEmpty(), "Soporte TI")

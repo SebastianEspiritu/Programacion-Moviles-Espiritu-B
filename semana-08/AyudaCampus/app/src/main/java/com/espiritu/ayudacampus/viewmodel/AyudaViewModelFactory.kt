@@ -12,7 +12,8 @@ class AyudaViewModelFactory(
     private val preferencias: PreferenciasSesion,
     private val recibirTickets: Flow<Boolean>,
     private val esperarInicializacion: suspend () -> Unit,
-    private val usuario: Usuario? = null
+    private val usuario: Usuario? = null,
+    private val ticketId: Int? = null
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         @Suppress("UNCHECKED_CAST")
@@ -20,7 +21,10 @@ class AyudaViewModelFactory(
             SesionViewModel::class.java -> SesionViewModel(repo, preferencias, esperarInicializacion)
             MisTicketsViewModel::class.java -> MisTicketsViewModel(repo, requireNotNull(usuario))
             NuevoTicketViewModel::class.java -> NuevoTicketViewModel(repo, requireNotNull(usuario), recibirTickets)
+            DetalleTicketViewModel::class.java -> DetalleTicketViewModel(repo, requireNotNull(usuario), requireNotNull(ticketId))
             else -> throw IllegalArgumentException("ViewModel no registrado: ${modelClass.name}")
         } as T
     }
+
+    fun paraDetalle(id: Int) = AyudaViewModelFactory(repo, preferencias, recibirTickets, esperarInicializacion, usuario, id)
 }
