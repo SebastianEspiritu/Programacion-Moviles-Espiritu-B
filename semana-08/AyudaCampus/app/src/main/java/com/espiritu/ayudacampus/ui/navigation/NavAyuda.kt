@@ -6,6 +6,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -32,6 +35,10 @@ import com.espiritu.ayudacampus.ui.cliente.SplashScreen
 import com.espiritu.ayudacampus.ui.components.AppTopBar
 import com.espiritu.ayudacampus.ui.theme.AyudaCampusTheme
 import com.espiritu.ayudacampus.viewmodel.SesionViewModel
+import com.espiritu.ayudacampus.viewmodel.PanelSoporteViewModel
+import com.espiritu.ayudacampus.viewmodel.BandejaViewModel
+import com.espiritu.ayudacampus.ui.soporte.PanelSoporteScreen
+import com.espiritu.ayudacampus.ui.soporte.BandejaScreen
 
 @Composable
 fun NavAyuda(vm: SesionViewModel, fabricaTickets: (Usuario) -> AyudaViewModelFactory) {
@@ -77,6 +84,27 @@ fun NavAyuda(vm: SesionViewModel, fabricaTickets: (Usuario) -> AyudaViewModelFac
                     }
                 }
             }
+            if (usuario?.rol == Rol.ADMIN.name && ruta in listOf(Rutas.PANEL, Rutas.BANDEJA_RUTA, Rutas.CATEGORIAS, Rutas.AJUSTES, Rutas.ATENDER)) {
+                NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+                    listOf(Triple(Rutas.PANEL, "Panel", Icons.Default.Dashboard),
+                        Triple(Rutas.BANDEJA, "Tickets", Icons.AutoMirrored.Filled.List),
+                        Triple(Rutas.CATEGORIAS, "Categorías", Icons.Default.Category),
+                        Triple(Rutas.AJUSTES, "Ajustes", Icons.Default.Settings)).forEach { (destino, texto, icono) ->
+                        NavigationBarItem(selected = ruta == destino ||
+                            (destino == Rutas.BANDEJA && ruta in listOf(Rutas.BANDEJA_RUTA, Rutas.ATENDER)), onClick = {
+                            nav.navigate(destino) {
+                                popUpTo(Rutas.PANEL) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }, icon = { Icon(icono, null) }, label = { Text(texto) },
+                            colors = NavigationBarItemDefaults.colors(
+                                indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.primary))
+                    }
+                }
+            }
         }) { padding ->
             NavHost(navController = nav, startDestination = Rutas.SPLASH, modifier = Modifier.padding(padding)) {
                 composable(Rutas.SPLASH) { SplashScreen(errorInicializacion) }
@@ -114,7 +142,29 @@ fun NavAyuda(vm: SesionViewModel, fabricaTickets: (Usuario) -> AyudaViewModelFac
                     }
                 }
                 composable(Rutas.PANEL) {
-                    InicioPerfil("Panel de soporte", usuario?.nombre.orEmpty(), "Soporte TI")
+                    SoloSoporte(usuario) { soporte ->
+                        val panelVm: PanelSoporteViewModel = viewModel(factory = fabricaTickets(soporte))
+                        PanelSoporteScreen(panelVm) { nav.navigate(Rutas.bandeja(alertas = true)) { launchSingleTop = true } }
+                    }
+                }
+                composable(Rutas.BANDEJA_RUTA, arguments = listOf(navArgument("alertas") { type = NavType.BoolType; defaultValue = false })) { entradaBandeja ->
+                    SoloSoporte(usuario) { soporte ->
+                        val alertas = entradaBandeja.arguments?.getBoolean("alertas") ?: false
+                        val bandejaVm: BandejaViewModel = viewModel(factory = fabricaTickets(soporte).paraBandeja(alertas))
+                        BandejaScreen(bandejaVm) { nav.navigate(Rutas.atender(it)) }
+                    }
+                }
+                composable(Rutas.CATEGORIAS) {
+                    SoloSoporte(usuario) { DestinoPendiente("Categorías", "La gestión de categorías estará disponible en el siguiente paso.") }
+                }
+                composable(Rutas.AJUSTES) {
+                    SoloSoporte(usuario) { DestinoPendiente("Ajustes", "Los ajustes estarán disponibles más adelante.") }
+                }
+                composable(Rutas.ATENDER, arguments = listOf(navArgument("ticketId") { type = NavType.IntType })) { entradaAtender ->
+                    SoloSoporte(usuario) {
+                        DestinoPendiente("Atender ticket #${entradaAtender.arguments?.getInt("ticketId")}",
+                            "La atención de tickets estará disponible en el siguiente paso.")
+                    }
                 }
             }
         }
@@ -129,12 +179,10 @@ private fun DestinoPendiente(titulo: String, mensaje: String) {
 }
 
 @Composable
-private fun InicioPerfil(titulo: String, nombre: String, perfil: String) {
-    Scaffold(topBar = { AppTopBar(titulo) }) { padding ->
-        Column(Modifier.padding(padding).padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Hola, $nombre", style = MaterialTheme.typography.headlineSmall)
-            Text(perfil, color = MaterialTheme.colorScheme.primary)
-        }
+private fun SoloSoporte(usuario: Usuario?, contenido: @Composable (Usuario) -> Unit) {
+    if (usuario != null && usuario.id > 0 && usuario.rol == Rol.ADMIN.name) {
+        contenido(usuario)
+    } else {
+        Text("Acceso exclusivo para Soporte TI.", Modifier.padding(24.dp))
     }
 }

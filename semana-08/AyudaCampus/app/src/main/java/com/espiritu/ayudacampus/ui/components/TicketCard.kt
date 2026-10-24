@@ -14,7 +14,7 @@ import java.text.DateFormat
 import java.util.Date
 
 @Composable
-fun TicketCard(detalle: TicketConDetalle, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun TicketCard(detalle: TicketConDetalle, onClick: () -> Unit, modifier: Modifier = Modifier, mostrarCliente: Boolean = false) {
     val ticket = detalle.ticket
     val icono = iconoCategoria(detalle.categoria.icono)
     Card(onClick = onClick, modifier = modifier.fillMaxWidth(),
@@ -24,6 +24,7 @@ fun TicketCard(detalle: TicketConDetalle, onClick: () -> Unit, modifier: Modifie
             Box(Modifier.width(5.dp).fillMaxHeight().background(colorPrioridad(ticket.prioridad)))
             Column(Modifier.weight(1f).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("#${ticket.id}", style = MaterialTheme.typography.labelMedium)
+                if (mostrarCliente) Text("Estudiante: ${detalle.cliente.nombre}", style = MaterialTheme.typography.bodyMedium)
                 Text(ticket.titulo, style = MaterialTheme.typography.titleMedium,
                     maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
