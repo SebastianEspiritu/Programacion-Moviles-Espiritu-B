@@ -1,6 +1,8 @@
 package com.espiritu.ayudacampus.data.prefs
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
@@ -19,13 +21,19 @@ data class SesionGuardada(val rol: String, val usuarioId: Int)
 interface PreferenciasSesion {
     val sesion: Flow<SesionGuardada>
     val modoOscuro: Flow<Boolean>
+    val notificaciones: Flow<Boolean>
+    val recibirTickets: Flow<Boolean>
+    suspend fun guardarModoOscuro(activado: Boolean)
+    suspend fun guardarNotificaciones(activadas: Boolean)
+    suspend fun guardarRecibirTickets(activado: Boolean)
     suspend fun guardarSesion(rol: String, usuarioId: Int)
     suspend fun cerrarSesion()
 }
 
-class PreferenciasStore(
-    private val context: Context
+class PreferenciasStore internal constructor(
+    private val store: DataStore<Preferences>
 ) : PreferenciasSesion {
+    constructor(context: Context) : this(context.applicationContext.dataStore)
 
     private object Claves {
         val PERFIL_ACTIVO = stringPreferencesKey("perfilActivo")
@@ -37,31 +45,31 @@ class PreferenciasStore(
 
     // LECTURA DE PREFERENCIAS
 
-    override val sesion: Flow<SesionGuardada> = context.dataStore.data.map {
+    override val sesion: Flow<SesionGuardada> = store.data.map {
         SesionGuardada(it[Claves.PERFIL_ACTIVO] ?: "", it[Claves.USUARIO_ID] ?: 0)
     }
 
-    val perfilActivo: Flow<String> = context.dataStore.data.map {
+    val perfilActivo: Flow<String> = store.data.map {
             preferencias ->
         preferencias[Claves.PERFIL_ACTIVO] ?: ""
     }
 
-    val usuarioId: Flow<Int> = context.dataStore.data.map {
+    val usuarioId: Flow<Int> = store.data.map {
             preferencias ->
         preferencias[Claves.USUARIO_ID] ?: 0
     }
 
-    override val modoOscuro: Flow<Boolean> = context.dataStore.data.map {
+    override val modoOscuro: Flow<Boolean> = store.data.map {
             preferencias ->
         preferencias[Claves.MODO_OSCURO] ?: false
     }
 
-    val notificaciones: Flow<Boolean> = context.dataStore.data.map {
+    override val notificaciones: Flow<Boolean> = store.data.map {
             preferencias ->
         preferencias[Claves.NOTIFICACIONES] ?: true
     }
 
-    val recibirTickets: Flow<Boolean> = context.dataStore.data.map {
+    override val recibirTickets: Flow<Boolean> = store.data.map {
             preferencias ->
         preferencias[Claves.RECIBIR_TICKETS] ?: true
     }
@@ -76,7 +84,7 @@ class PreferenciasStore(
             "El rol debe ser CLIENTE o ADMIN"
         }
 
-        context.dataStore.edit { preferencias ->
+        store.edit { preferencias ->
             preferencias[Claves.PERFIL_ACTIVO] = rol
             preferencias[Claves.USUARIO_ID] = usuarioId
         }
@@ -84,24 +92,24 @@ class PreferenciasStore(
 
     // GUARDAR MODO OSCURO
 
-    suspend fun guardarModoOscuro(activado: Boolean) {
-        context.dataStore.edit { preferencias ->
+    override suspend fun guardarModoOscuro(activado: Boolean) {
+        store.edit { preferencias ->
             preferencias[Claves.MODO_OSCURO] = activado
         }
     }
 
     // GUARDAR NOTIFICACIONES
 
-    suspend fun guardarNotificaciones(activadas: Boolean) {
-        context.dataStore.edit { preferencias ->
+    override suspend fun guardarNotificaciones(activadas: Boolean) {
+        store.edit { preferencias ->
             preferencias[Claves.NOTIFICACIONES] = activadas
         }
     }
 
     // GUARDAR DISPONIBILIDAD DE LA MESA DE AYUDA
 
-    suspend fun guardarRecibirTickets(activado: Boolean) {
-        context.dataStore.edit { preferencias ->
+    override suspend fun guardarRecibirTickets(activado: Boolean) {
+        store.edit { preferencias ->
             preferencias[Claves.RECIBIR_TICKETS] = activado
         }
     }
@@ -109,7 +117,7 @@ class PreferenciasStore(
     // CERRAR SESIÓN SIN BORRAR LOS AJUSTES
 
     override suspend fun cerrarSesion() {
-        context.dataStore.edit { preferencias ->
+        store.edit { preferencias ->
             preferencias.remove(Claves.PERFIL_ACTIVO)
             preferencias.remove(Claves.USUARIO_ID)
         }

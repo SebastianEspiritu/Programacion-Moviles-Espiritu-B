@@ -11,7 +11,18 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+data class AjustesUiState(
+    val modoOscuro: Boolean = false,
+    val notificaciones: Boolean = true,
+    val recibirTickets: Boolean = true,
+    val cargando: Boolean = true,
+    val guardando: Boolean = false,
+    val error: String? = null
+)
 
 class SesionViewModel(
     private val repo: AyudaRepository,
@@ -31,18 +42,71 @@ class SesionViewModel(
     private val _errorInicializacion = MutableStateFlow<String?>(null)
     val errorInicializacion = _errorInicializacion.asStateFlow()
     private var restauracion: Job? = null
+    private var lecturaAjustes: Job? = null
+    private val _ajustes = MutableStateFlow(AjustesUiState())
+    val ajustes = _ajustes.asStateFlow()
+    private val _cerrandoSesion = MutableStateFlow(false)
+    val cerrandoSesion = _cerrandoSesion.asStateFlow()
 
     init {
-        viewModelScope.launch {
+        cargarAjustes()
+        restaurarSesion()
+    }
+
+    fun cargarAjustes() {
+        lecturaAjustes?.cancel()
+        _ajustes.update { it.copy(cargando = true, error = null) }
+        lecturaAjustes = viewModelScope.launch {
             try {
-                preferencias.modoOscuro.collect { _modoOscuro.value = it }
+                combine(preferencias.modoOscuro, preferencias.notificaciones, preferencias.recibirTickets) { oscuro, avisos, recibe ->
+                    Triple(oscuro, avisos, recibe)
+                }.collect { (oscuro, avisos, recibe) ->
+                    _modoOscuro.value = oscuro
+                    _ajustes.update { it.copy(modoOscuro = oscuro, notificaciones = avisos,
+                        recibirTickets = recibe, cargando = false) }
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _error.value = "No se pudo leer la preferencia de apariencia."
+                _ajustes.update { it.copy(cargando = false, error = "No se pudieron leer los ajustes. Reintenta la carga.") }
             }
         }
-        restaurarSesion()
+    }
+
+    fun guardarModoOscuro(valor: Boolean) = guardarAjuste { preferencias.guardarModoOscuro(valor) }
+    fun guardarNotificaciones(valor: Boolean) = guardarAjuste { preferencias.guardarNotificaciones(valor) }
+    fun guardarRecibirTickets(valor: Boolean) {
+        if (_usuarioActual.value?.rol != Rol.ADMIN.name) {
+            _ajustes.update { it.copy(error = "Solo Soporte TI puede cambiar la recepción de tickets.") }
+            return
+        }
+        guardarAjuste { preferencias.guardarRecibirTickets(valor) }
+    }
+
+    private fun guardarAjuste(guardar: suspend () -> Unit) {
+        if (_usuarioActual.value == null || _cerrandoSesion.value || _ajustes.value.guardando || _ajustes.value.cargando) return
+        _ajustes.update { it.copy(guardando = true, error = null) }
+        viewModelScope.launch {
+            try { guardar() }
+            catch (e: CancellationException) { throw e }
+            catch (e: Exception) { _ajustes.update { it.copy(error = "No se pudo guardar el ajuste. Inténtalo nuevamente.") } }
+            finally { _ajustes.update { it.copy(guardando = false) } }
+        }
+    }
+
+    // Cambiar de cuenta también exige volver a autenticarse con su rol real.
+    fun cerrarSesion() {
+        if (_usuarioActual.value == null || _cerrandoSesion.value || _ajustes.value.guardando) return
+        _cerrandoSesion.value = true
+        _error.value = null
+        viewModelScope.launch {
+            try {
+                preferencias.cerrarSesion()
+                _usuarioActual.value = null
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { _error.value = "No se pudo cerrar sesión. Inténtalo nuevamente." }
+            finally { _cerrandoSesion.value = false }
+        }
     }
 
     fun restaurarSesion() {

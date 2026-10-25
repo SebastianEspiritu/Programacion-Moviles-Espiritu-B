@@ -11,9 +11,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.espiritu.ayudacampus.model.EstadoTicket
+import com.espiritu.ayudacampus.R
 import com.espiritu.ayudacampus.ui.components.*
 import com.espiritu.ayudacampus.viewmodel.MisTicketsViewModel
 
@@ -31,7 +33,7 @@ fun MisTicketsScreen(vm: MisTicketsViewModel, onNuevo: () -> Unit, onDetalle: (I
         Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp)) {
             Text("Hola, ${vm.usuario.nombre}", style = MaterialTheme.typography.headlineSmall)
             Text(if (estado.cargando) "Cargando tus tickets…" else if (estado.error != null)
-                "Consulta tus incidencias" else "Tienes ${estado.abiertos} tickets abiertos",
+                "Consulta tus incidencias" else pluralStringResource(R.plurals.tickets_abiertos, estado.abiertos, estado.abiertos),
                 style = MaterialTheme.typography.bodyMedium)
             Spacer(Modifier.height(12.dp))
             AyudaTextField(busqueda, vm::buscar, "Buscar por número o título", Modifier.fillMaxWidth())

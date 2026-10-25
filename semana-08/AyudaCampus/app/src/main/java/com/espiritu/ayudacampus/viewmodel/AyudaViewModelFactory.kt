@@ -21,6 +21,7 @@ class AyudaViewModelFactory(
         @Suppress("UNCHECKED_CAST")
         return when (modelClass) {
             SesionViewModel::class.java -> SesionViewModel(repo, preferencias, esperarInicializacion)
+            PerfilViewModel::class.java -> PerfilViewModel(repo, requireNotNull(usuario))
             MisTicketsViewModel::class.java -> MisTicketsViewModel(repo, requireNotNull(usuario))
             NuevoTicketViewModel::class.java -> NuevoTicketViewModel(repo, requireNotNull(usuario), recibirTickets)
             DetalleTicketViewModel::class.java -> DetalleTicketViewModel(repo, requireNotNull(usuario), requireNotNull(ticketId))

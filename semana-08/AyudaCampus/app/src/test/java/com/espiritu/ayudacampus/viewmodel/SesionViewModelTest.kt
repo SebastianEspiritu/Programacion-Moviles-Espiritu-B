@@ -47,15 +47,36 @@ class SesionViewModelTest {
         private val guardada = MutableStateFlow(SesionGuardada("", 0))
         var falloLectura = false
         var falloEscritura = false
+        var cierrePendiente: CompletableDeferred<Unit>? = null
+        var cierres = 0
         override val sesion: Flow<SesionGuardada> get() =
             if (falloLectura) flow { throw IOException("Lectura") } else guardada
         override val modoOscuro = MutableStateFlow(false)
+        override val notificaciones = MutableStateFlow(true)
+        override val recibirTickets = MutableStateFlow(true)
+        override suspend fun guardarModoOscuro(activado: Boolean) {
+            if (falloEscritura) throw IOException("Escritura")
+            modoOscuro.value = activado
+        }
+        override suspend fun guardarNotificaciones(activadas: Boolean) {
+            if (falloEscritura) throw IOException("Escritura")
+            notificaciones.value = activadas
+        }
+        override suspend fun guardarRecibirTickets(activado: Boolean) {
+            if (falloEscritura) throw IOException("Escritura")
+            recibirTickets.value = activado
+        }
         val actual get() = guardada.value
         override suspend fun guardarSesion(rol: String, usuarioId: Int) {
             if (falloEscritura) throw IOException("Escritura")
             guardada.value = SesionGuardada(rol, usuarioId)
         }
-        override suspend fun cerrarSesion() { guardada.value = SesionGuardada("", 0) }
+        override suspend fun cerrarSesion() {
+            cierres++
+            cierrePendiente?.await()
+            if (falloEscritura) throw IOException("Escritura")
+            guardada.value = SesionGuardada("", 0)
+        }
     }
 
     @Before fun preparar() { Dispatchers.setMain(dispatcher) }
@@ -64,7 +85,7 @@ class SesionViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun modelo(prefs: PreferenciasMemoria = PreferenciasMemoria(),
+    private fun modelo(prefs: PreferenciasSesion = PreferenciasMemoria(),
                        inicializar: suspend () -> Unit = {}): SesionViewModel =
         SesionViewModel(repo, prefs, inicializar).also { modelos += it }
 
@@ -181,5 +202,131 @@ class SesionViewModelTest {
         advanceUntilIdle()
         assertEquals(1, consultas)
         assertEquals(cliente, vm.usuarioActual.value)
+    }
+
+    @Test fun cerrarSesionConservaLosAjustesYNoRestauraLaCuentaAnterior() = runTest {
+        val prefs = PreferenciasMemoria()
+        val vm = modelo(prefs); advanceUntilIdle()
+        vm.login(cliente.correo, cliente.clave, Rol.CLIENTE); advanceUntilIdle()
+        vm.guardarModoOscuro(true); advanceUntilIdle()
+        vm.guardarNotificaciones(false); advanceUntilIdle()
+        vm.cerrarSesion(); advanceUntilIdle()
+        assertNull(vm.usuarioActual.value)
+        assertEquals(SesionGuardada("", 0), prefs.actual)
+        assertTrue(prefs.modoOscuro.value)
+        assertFalse(prefs.notificaciones.value)
+        val restaurado = modelo(prefs); advanceUntilIdle()
+        assertNull(restaurado.usuarioActual.value)
+        assertTrue(restaurado.modoOscuro.value)
+    }
+
+    @Test fun falloAlCerrarMantieneLaCuentaYPermiteReintentar() = runTest {
+        val prefs = PreferenciasMemoria(); val vm = modelo(prefs); advanceUntilIdle()
+        vm.login(cliente.correo, cliente.clave, Rol.CLIENTE); advanceUntilIdle()
+        prefs.falloEscritura = true; vm.cerrarSesion(); advanceUntilIdle()
+        assertEquals(cliente, vm.usuarioActual.value)
+        assertEquals(cliente.id, prefs.actual.usuarioId)
+        assertNotNull(vm.error.value)
+        assertFalse(vm.cerrandoSesion.value)
+        prefs.falloEscritura = false; vm.cerrarSesion(); advanceUntilIdle()
+        assertNull(vm.usuarioActual.value)
+    }
+
+    @Test fun dobleCierreSeBloqueaYNoPermiteCambiarAjustesMientrasCierra() = runTest {
+        val prefs = PreferenciasMemoria(); val vm = modelo(prefs); advanceUntilIdle()
+        vm.login(cliente.correo, cliente.clave, Rol.CLIENTE); advanceUntilIdle()
+        prefs.cierrePendiente = CompletableDeferred()
+        repeat(2) { vm.cerrarSesion() }; runCurrent()
+        vm.guardarModoOscuro(true); runCurrent()
+        assertEquals(1, prefs.cierres)
+        assertFalse(prefs.modoOscuro.value)
+        prefs.cierrePendiente!!.complete(Unit); advanceUntilIdle()
+        assertNull(vm.usuarioActual.value)
+    }
+
+    @Test fun cambioDeCuentaExigeCredencialesYRolReal() = runTest {
+        val prefs = PreferenciasMemoria(); val vm = modelo(prefs); advanceUntilIdle()
+        vm.login(cliente.correo, cliente.clave, Rol.CLIENTE); advanceUntilIdle()
+        vm.cerrarSesion(); advanceUntilIdle()
+        vm.login(cliente.correo, cliente.clave, Rol.ADMIN); advanceUntilIdle()
+        assertNull(vm.usuarioActual.value)
+        assertEquals(SesionGuardada("", 0), prefs.actual)
+        vm.login(soporte.correo, soporte.clave, Rol.ADMIN); advanceUntilIdle()
+        assertEquals(soporte, vm.usuarioActual.value)
+        assertEquals(SesionGuardada("ADMIN", soporte.id), prefs.actual)
+    }
+
+    @Test fun estudianteNoPuedeModificarRecepcionInclusoInvocandoElViewModel() = runTest {
+        val prefs = PreferenciasMemoria(); val vm = modelo(prefs); advanceUntilIdle()
+        vm.login(cliente.correo, cliente.clave, Rol.CLIENTE); advanceUntilIdle()
+        vm.guardarRecibirTickets(false); advanceUntilIdle()
+        assertTrue(prefs.recibirTickets.value)
+        assertNotNull(vm.ajustes.value.error)
+        assertEquals(cliente, vm.usuarioActual.value)
+    }
+
+    @Test fun soportePuedeCambiarLaRecepcionYSeReflejaEnElEstado() = runTest {
+        val prefs = PreferenciasMemoria(); val vm = modelo(prefs); advanceUntilIdle()
+        vm.login(soporte.correo, soporte.clave, Rol.ADMIN); advanceUntilIdle()
+        vm.guardarRecibirTickets(false); advanceUntilIdle()
+        assertFalse(prefs.recibirTickets.value)
+        assertFalse(vm.ajustes.value.recibirTickets)
+        assertFalse(vm.ajustes.value.guardando)
+    }
+
+    @Test fun sinAutenticacionNoSeModificanAjustes() = runTest {
+        val prefs = PreferenciasMemoria(); val vm = modelo(prefs); advanceUntilIdle()
+        vm.guardarModoOscuro(true); vm.guardarNotificaciones(false); vm.guardarRecibirTickets(false)
+        advanceUntilIdle()
+        assertFalse(prefs.modoOscuro.value)
+        assertTrue(prefs.notificaciones.value)
+        assertTrue(prefs.recibirTickets.value)
+    }
+
+    @Test fun falloDeEscrituraNoSimulaUnAjusteGuardado() = runTest {
+        val prefs = PreferenciasMemoria(); val vm = modelo(prefs); advanceUntilIdle()
+        vm.login(cliente.correo, cliente.clave, Rol.CLIENTE); advanceUntilIdle()
+        prefs.falloEscritura = true; vm.guardarModoOscuro(true); advanceUntilIdle()
+        assertFalse(vm.modoOscuro.value)
+        assertNotNull(vm.ajustes.value.error)
+        assertFalse(vm.ajustes.value.guardando)
+        prefs.falloEscritura = false; vm.guardarModoOscuro(true); advanceUntilIdle()
+        assertTrue(vm.modoOscuro.value)
+    }
+
+    @Test fun errorDeLecturaDeAjustesPermiteReintentarSinInventarValoresPersistidos() = runTest {
+        val memoria = PreferenciasMemoria()
+        var fallar = true
+        val prefs = object : PreferenciasSesion by memoria {
+            override val notificaciones: Flow<Boolean> get() =
+                if (fallar) flow { throw IOException("Lectura de ajustes") } else memoria.notificaciones
+        }
+        val vm = modelo(prefs); advanceUntilIdle()
+        assertNotNull(vm.ajustes.value.error)
+        assertFalse(vm.ajustes.value.cargando)
+        fallar = false; vm.cargarAjustes(); advanceUntilIdle()
+        assertNull(vm.ajustes.value.error)
+        assertTrue(vm.ajustes.value.notificaciones)
+    }
+
+    @Test fun cierreEsperaAQueTermineUnaEscrituraDeAjustes() = runTest {
+        val memoria = PreferenciasMemoria()
+        val pendiente = CompletableDeferred<Unit>()
+        val prefs = object : PreferenciasSesion by memoria {
+            override suspend fun guardarModoOscuro(activado: Boolean) {
+                pendiente.await()
+                memoria.guardarModoOscuro(activado)
+            }
+        }
+        val vm = modelo(prefs); advanceUntilIdle()
+        vm.login(cliente.correo, cliente.clave, Rol.CLIENTE); advanceUntilIdle()
+        vm.guardarModoOscuro(true); runCurrent()
+        vm.cerrarSesion(); runCurrent()
+        assertEquals(cliente, vm.usuarioActual.value)
+        assertEquals(0, memoria.cierres)
+        pendiente.complete(Unit); advanceUntilIdle()
+        vm.cerrarSesion(); advanceUntilIdle()
+        assertNull(vm.usuarioActual.value)
+        assertTrue(memoria.modoOscuro.value)
     }
 }
