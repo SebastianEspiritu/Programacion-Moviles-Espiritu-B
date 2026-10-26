@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">AyudaCampus</string>
+    <plurals name="tickets_abiertos">
+        <item quantity="one">Tienes %d ticket abierto</item>
+        <item quantity="other">Tienes %d tickets abiertos</item>
+    </plurals>
+</resources>

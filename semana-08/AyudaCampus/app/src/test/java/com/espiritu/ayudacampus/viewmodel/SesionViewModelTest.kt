@@ -1,0 +1,508 @@
+package com.espiritu.ayudacampus.viewmodel
+
+import androidx.lifecycle.viewModelScope
+import com.espiritu.ayudacampus.data.local.entity.Usuario
+import com.espiritu.ayudacampus.data.prefs.PreferenciasSesion
+import com.espiritu.ayudacampus.data.prefs.SesionGuardada
+import com.espiritu.ayudacampus.data.repository.AyudaRepository
+import com.espiritu.ayudacampus.model.Rol
+import java.io.IOException
+import java.lang.reflect.Proxy
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.test.*
+import org.junit.After
+import org.junit.Assert.*
+import org.junit.Before
+import org.junit.Test
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class SesionViewModelTest {
+    private val dispatcher = StandardTestDispatcher()
+    private val modelos = mutableListOf<SesionViewModel>()
+    private val cliente = Usuario(7, "Juan", "juan@campus.test", "1234", "CLIENTE")
+    private val soporte = Usuario(12, "Soporte", "soporte@campus.test", "admin", "ADMIN")
+    private var consultas = 0
+    private var falloRepo = false
+    private var usuariosPorId = listOf(cliente, soporte)
+    private var logins = 0
+
+    // El doble falla ante cualquier operación ajena al contrato de sesión.
+    private val repo = Proxy.newProxyInstance(
+        AyudaRepository::class.java.classLoader, arrayOf(AyudaRepository::class.java)
+    ) { _, method, args ->
+        consultas++
+        if (falloRepo) throw IOException("Base no disponible")
+        when (method.name) {
+            "login" -> { logins++; listOf(cliente, soporte).find { it.correo == args[0] && it.clave == args[1] } }
+            "obtenerUsuarioPorId" -> usuariosPorId.find { it.id == args[0] }
+            else -> error("Operación inesperada: ${method.name}")
+        }
+    } as AyudaRepository
+
+    private class PreferenciasMemoria : PreferenciasSesion {
+        private val guardada = MutableStateFlow(SesionGuardada("", 0))
+        var falloLectura = false
+        var falloEscritura = false
+        var cierrePendiente: CompletableDeferred<Unit>? = null
+        var sesionPendiente: CompletableDeferred<Unit>? = null
+        var cierres = 0
+        override val sesion: Flow<SesionGuardada> get() =
+            if (falloLectura) flow { throw IOException("Lectura") } else guardada
+        override val modoOscuro = MutableStateFlow(false)
+        override val notificaciones = MutableStateFlow(true)
+        override val recibirTickets = MutableStateFlow(true)
+        override suspend fun guardarModoOscuro(activado: Boolean) {
+            if (falloEscritura) throw IOException("Escritura")
+            modoOscuro.value = activado
+        }
+        override suspend fun guardarNotificaciones(activadas: Boolean) {
+            if (falloEscritura) throw IOException("Escritura")
+            notificaciones.value = activadas
+        }
+        override suspend fun guardarRecibirTickets(activado: Boolean) {
+            if (falloEscritura) throw IOException("Escritura")
+            recibirTickets.value = activado
+        }
+        val actual get() = guardada.value
+        override suspend fun guardarSesion(rol: String, usuarioId: Int) {
+            sesionPendiente?.await()
+            if (falloEscritura) throw IOException("Escritura")
+            guardada.value = SesionGuardada(rol, usuarioId)
+        }
+        override suspend fun cerrarSesion() {
+            cierres++
+            cierrePendiente?.await()
+            if (falloEscritura) throw IOException("Escritura")
+            guardada.value = SesionGuardada("", 0)
+        }
+    }
+
+    @Before fun preparar() { Dispatchers.setMain(dispatcher) }
+    @After fun limpiar() {
+        modelos.forEach { it.viewModelScope.cancel() }
+        Dispatchers.resetMain()
+    }
+
+    private fun modelo(prefs: PreferenciasSesion = PreferenciasMemoria(),
+                       inicializar: suspend () -> Unit = {}): SesionViewModel =
+        SesionViewModel(repo, prefs, inicializar).also { modelos += it }
+
+    @Test fun sinSesionAbreLoginSinConsultarUsuarios() = runTest {
+        val vm = modelo()
+        advanceUntilIdle()
+        assertFalse(vm.restaurando.value)
+        assertNull(vm.usuarioActual.value)
+        assertEquals(0, consultas)
+    }
+
+    @Test fun camposVaciosNoConsultanRepositorio() = runTest {
+        val vm = modelo(); advanceUntilIdle()
+        listOf("" to "1234", "juan@campus.test" to "", " " to " ").forEach { (correo, clave) ->
+            vm.login(correo, clave, Rol.CLIENTE)
+            assertNotNull(vm.error.value)
+        }
+        assertEquals(0, consultas)
+    }
+
+    @Test fun credencialesIncorrectasNoGuardanSesion() = runTest {
+        val prefs = PreferenciasMemoria(); val vm = modelo(prefs); advanceUntilIdle()
+        vm.login(cliente.correo, "incorrecta", Rol.CLIENTE); advanceUntilIdle()
+        assertEquals("Correo o contraseña incorrectos", vm.error.value)
+        assertNull(vm.usuarioActual.value)
+        assertEquals(0, prefs.actual.usuarioId)
+    }
+
+    @Test fun rolIncorrectoNoGuardaSesion() = runTest {
+        val prefs = PreferenciasMemoria(); val vm = modelo(prefs); advanceUntilIdle()
+        vm.login(cliente.correo, cliente.clave, Rol.ADMIN); advanceUntilIdle()
+        assertNotNull(vm.error.value)
+        assertNull(vm.usuarioActual.value)
+        assertEquals(0, prefs.actual.usuarioId)
+    }
+
+    @Test fun ambosPerfilesInicianSesionYSeRestauranPorId() = runTest {
+        listOf(cliente, soporte).forEach { usuario ->
+            val prefs = PreferenciasMemoria(); val vm = modelo(prefs); advanceUntilIdle()
+            vm.login(" ${usuario.correo} ", usuario.clave, Rol.valueOf(usuario.rol)); advanceUntilIdle()
+            assertEquals(usuario, vm.usuarioActual.value)
+            assertEquals(SesionGuardada(usuario.rol, usuario.id), prefs.actual)
+            val restaurado = modelo(prefs); advanceUntilIdle()
+            assertEquals(usuario, restaurado.usuarioActual.value)
+            assertNull(restaurado.error.value)
+        }
+    }
+
+    @Test fun sesionesInconsistentesSeEliminan() = runTest {
+        listOf(SesionGuardada("CLIENTE", 999), SesionGuardada("ADMIN", cliente.id),
+            SesionGuardada("OTRO", cliente.id), SesionGuardada("CLIENTE", 0)).forEach { sesion ->
+            val prefs = PreferenciasMemoria(); prefs.guardarSesion(sesion.rol, sesion.usuarioId)
+            val vm = modelo(prefs); advanceUntilIdle()
+            assertNull(vm.usuarioActual.value)
+            assertNotNull(vm.error.value)
+            assertEquals(SesionGuardada("", 0), prefs.actual)
+        }
+    }
+
+    @Test fun restauracionEsperaLaSiembraYBloqueaElLogin() = runTest {
+        val carga = CompletableDeferred<Unit>()
+        val prefs = PreferenciasMemoria(); prefs.guardarSesion(cliente.rol, cliente.id)
+        val vm = modelo(prefs) { carga.await() }; runCurrent()
+        vm.login(soporte.correo, soporte.clave, Rol.ADMIN); runCurrent()
+        assertTrue(vm.restaurando.value)
+        assertEquals(0, consultas)
+        carga.complete(Unit); advanceUntilIdle()
+        assertEquals(cliente, vm.usuarioActual.value)
+    }
+
+    @Test fun falloInicializacionSeExponeYSigueBloqueandoElLogin() = runTest {
+        val vm = modelo { throw IOException("Siembra fallida") }; advanceUntilIdle()
+        assertNotNull(vm.errorInicializacion.value)
+        assertFalse(vm.restaurando.value)
+        vm.login(cliente.correo, cliente.clave, Rol.CLIENTE); advanceUntilIdle()
+        assertEquals(0, consultas)
+        assertNull(vm.usuarioActual.value)
+    }
+
+    @Test fun falloLecturaSesionPermiteVolverAlLogin() = runTest {
+        val prefs = PreferenciasMemoria().apply { falloLectura = true }
+        val vm = modelo(prefs); advanceUntilIdle()
+        assertFalse(vm.restaurando.value)
+        assertNotNull(vm.error.value)
+        assertNull(vm.usuarioActual.value)
+    }
+
+    @Test fun falloEscrituraNoAutenticaAlUsuario() = runTest {
+        val prefs = PreferenciasMemoria().apply { falloEscritura = true }
+        val vm = modelo(prefs); advanceUntilIdle()
+        vm.login(cliente.correo, cliente.clave, Rol.CLIENTE); advanceUntilIdle()
+        assertNull(vm.usuarioActual.value)
+        assertNotNull(vm.error.value)
+        assertFalse(vm.ingresando.value)
+    }
+
+    @Test fun falloRepositorioNoDejaLaPantallaCargando() = runTest {
+        val vm = modelo(); advanceUntilIdle(); falloRepo = true
+        vm.login(cliente.correo, cliente.clave, Rol.CLIENTE); advanceUntilIdle()
+        assertNotNull(vm.error.value)
+        assertFalse(vm.ingresando.value)
+        assertNull(vm.usuarioActual.value)
+    }
+
+    @Test fun aparienciaSeObservaComoEstado() = runTest {
+        val prefs = PreferenciasMemoria(); val vm = modelo(prefs); advanceUntilIdle()
+        prefs.modoOscuro.value = true; runCurrent()
+        assertTrue(vm.modoOscuro.value)
+    }
+
+    @Test fun doblePulsacionSoloIniciaUnaPeticion() = runTest {
+        val vm = modelo(); advanceUntilIdle()
+        repeat(2) { vm.login(cliente.correo, cliente.clave, Rol.CLIENTE) }
+        advanceUntilIdle()
+        assertEquals(1, consultas)
+        assertEquals(cliente, vm.usuarioActual.value)
+    }
+
+    @Test fun cerrarSesionConservaLosAjustesYNoRestauraLaCuentaAnterior() = runTest {
+        val prefs = PreferenciasMemoria()
+        val vm = modelo(prefs); advanceUntilIdle()
+        vm.login(cliente.correo, cliente.clave, Rol.CLIENTE); advanceUntilIdle()
+        vm.guardarModoOscuro(true); advanceUntilIdle()
+        vm.guardarNotificaciones(false); advanceUntilIdle()
+        vm.cerrarSesion(); advanceUntilIdle()
+        assertNull(vm.usuarioActual.value)
+        assertEquals(SesionGuardada("", 0), prefs.actual)
+        assertTrue(prefs.modoOscuro.value)
+        assertFalse(prefs.notificaciones.value)
+        val restaurado = modelo(prefs); advanceUntilIdle()
+        assertNull(restaurado.usuarioActual.value)
+        assertTrue(restaurado.modoOscuro.value)
+    }
+
+    @Test fun falloAlCerrarMantieneLaCuentaYPermiteReintentar() = runTest {
+        val prefs = PreferenciasMemoria(); val vm = modelo(prefs); advanceUntilIdle()
+        vm.login(cliente.correo, cliente.clave, Rol.CLIENTE); advanceUntilIdle()
+        prefs.falloEscritura = true; vm.cerrarSesion(); advanceUntilIdle()
+        assertEquals(cliente, vm.usuarioActual.value)
+        assertEquals(cliente.id, prefs.actual.usuarioId)
+        assertNotNull(vm.error.value)
+        assertFalse(vm.cerrandoSesion.value)
+        prefs.falloEscritura = false; vm.cerrarSesion(); advanceUntilIdle()
+        assertNull(vm.usuarioActual.value)
+    }
+
+    @Test fun dobleCierreSeBloqueaYNoPermiteCambiarAjustesMientrasCierra() = runTest {
+        val prefs = PreferenciasMemoria(); val vm = modelo(prefs); advanceUntilIdle()
+        vm.login(cliente.correo, cliente.clave, Rol.CLIENTE); advanceUntilIdle()
+        prefs.cierrePendiente = CompletableDeferred()
+        repeat(2) { vm.cerrarSesion() }; runCurrent()
+        vm.guardarModoOscuro(true); runCurrent()
+        assertEquals(1, prefs.cierres)
+        assertFalse(prefs.modoOscuro.value)
+        prefs.cierrePendiente!!.complete(Unit); advanceUntilIdle()
+        assertNull(vm.usuarioActual.value)
+    }
+
+    @Test fun cambioDeCuentaExigeCredencialesYRolReal() = runTest {
+        val prefs = PreferenciasMemoria(); val vm = modelo(prefs); advanceUntilIdle()
+        vm.login(cliente.correo, cliente.clave, Rol.CLIENTE); advanceUntilIdle()
+        vm.cerrarSesion(); advanceUntilIdle()
+        vm.login(cliente.correo, cliente.clave, Rol.ADMIN); advanceUntilIdle()
+        assertNull(vm.usuarioActual.value)
+        assertEquals(SesionGuardada("", 0), prefs.actual)
+        vm.login(soporte.correo, soporte.clave, Rol.ADMIN); advanceUntilIdle()
+        assertEquals(soporte, vm.usuarioActual.value)
+        assertEquals(SesionGuardada("ADMIN", soporte.id), prefs.actual)
+    }
+
+    @Test fun estudianteNoPuedeModificarRecepcionInclusoInvocandoElViewModel() = runTest {
+        val prefs = PreferenciasMemoria(); val vm = modelo(prefs); advanceUntilIdle()
+        vm.login(cliente.correo, cliente.clave, Rol.CLIENTE); advanceUntilIdle()
+        vm.guardarRecibirTickets(false); advanceUntilIdle()
+        assertTrue(prefs.recibirTickets.value)
+        assertNotNull(vm.ajustes.value.error)
+        assertEquals(cliente, vm.usuarioActual.value)
+    }
+
+    @Test fun soportePuedeCambiarLaRecepcionYSeReflejaEnElEstado() = runTest {
+        val prefs = PreferenciasMemoria(); val vm = modelo(prefs); advanceUntilIdle()
+        vm.login(soporte.correo, soporte.clave, Rol.ADMIN); advanceUntilIdle()
+        vm.guardarRecibirTickets(false); advanceUntilIdle()
+        assertFalse(prefs.recibirTickets.value)
+        assertFalse(vm.ajustes.value.recibirTickets)
+        assertFalse(vm.ajustes.value.guardando)
+    }
+
+    @Test fun sinAutenticacionNoSeModificanAjustes() = runTest {
+        val prefs = PreferenciasMemoria(); val vm = modelo(prefs); advanceUntilIdle()
+        vm.guardarModoOscuro(true); vm.guardarNotificaciones(false); vm.guardarRecibirTickets(false)
+        advanceUntilIdle()
+        assertFalse(prefs.modoOscuro.value)
+        assertTrue(prefs.notificaciones.value)
+        assertTrue(prefs.recibirTickets.value)
+    }
+
+    @Test fun falloDeEscrituraNoSimulaUnAjusteGuardado() = runTest {
+        val prefs = PreferenciasMemoria(); val vm = modelo(prefs); advanceUntilIdle()
+        vm.login(cliente.correo, cliente.clave, Rol.CLIENTE); advanceUntilIdle()
+        prefs.falloEscritura = true; vm.guardarModoOscuro(true); advanceUntilIdle()
+        assertFalse(vm.modoOscuro.value)
+        assertNotNull(vm.ajustes.value.error)
+        assertFalse(vm.ajustes.value.guardando)
+        prefs.falloEscritura = false; vm.guardarModoOscuro(true); advanceUntilIdle()
+        assertTrue(vm.modoOscuro.value)
+    }
+
+    @Test fun errorDeLecturaDeAjustesPermiteReintentarSinInventarValoresPersistidos() = runTest {
+        val memoria = PreferenciasMemoria()
+        var fallar = true
+        val prefs = object : PreferenciasSesion by memoria {
+            override val notificaciones: Flow<Boolean> get() =
+                if (fallar) flow { throw IOException("Lectura de ajustes") } else memoria.notificaciones
+        }
+        val vm = modelo(prefs); advanceUntilIdle()
+        assertNotNull(vm.ajustes.value.error)
+        assertFalse(vm.ajustes.value.cargando)
+        fallar = false; vm.cargarAjustes(); advanceUntilIdle()
+        assertNull(vm.ajustes.value.error)
+        assertTrue(vm.ajustes.value.notificaciones)
+    }
+
+    @Test fun cierreEsperaAQueTermineUnaEscrituraDeAjustes() = runTest {
+        val memoria = PreferenciasMemoria()
+        val pendiente = CompletableDeferred<Unit>()
+        val prefs = object : PreferenciasSesion by memoria {
+            override suspend fun guardarModoOscuro(activado: Boolean) {
+                pendiente.await()
+                memoria.guardarModoOscuro(activado)
+            }
+        }
+        val vm = modelo(prefs); advanceUntilIdle()
+        vm.login(cliente.correo, cliente.clave, Rol.CLIENTE); advanceUntilIdle()
+        vm.guardarModoOscuro(true); runCurrent()
+        vm.cerrarSesion(); runCurrent()
+        assertEquals(cliente, vm.usuarioActual.value)
+        assertEquals(0, memoria.cierres)
+        pendiente.complete(Unit); advanceUntilIdle()
+        vm.cerrarSesion(); advanceUntilIdle()
+        assertNull(vm.usuarioActual.value)
+        assertTrue(memoria.modoOscuro.value)
+    }
+
+    private fun TestScope.autenticarAmbas(vm: SesionViewModel) {
+        advanceUntilIdle()
+        vm.login(cliente.correo, cliente.clave, Rol.CLIENTE); advanceUntilIdle()
+        vm.cambiarPerfil(); advanceUntilIdle()
+        assertNull(vm.usuarioActual.value)
+        vm.login(soporte.correo, soporte.clave, Rol.ADMIN); advanceUntilIdle()
+        assertEquals(soporte, vm.usuarioActual.value)
+    }
+
+    @Test fun ambasCuentasAutenticadasCambianDirectamenteSinNuevoLogin() = runTest {
+        val prefs = PreferenciasMemoria(); val vm = modelo(prefs)
+        autenticarAmbas(vm)
+        vm.cambiarPerfil(); advanceUntilIdle()
+        assertEquals(cliente, vm.usuarioActual.value)
+        assertEquals(SesionGuardada("CLIENTE", cliente.id), prefs.actual)
+        vm.cambiarPerfil(); advanceUntilIdle()
+        assertEquals(soporte, vm.usuarioActual.value)
+        assertEquals(SesionGuardada("ADMIN", soporte.id), prefs.actual)
+        assertEquals(2, logins)
+    }
+
+    @Test fun primerCambioVaALoginSinAcreditarElRolContrario() = runTest {
+        val prefs = PreferenciasMemoria(); val vm = modelo(prefs); advanceUntilIdle()
+        vm.login(cliente.correo, cliente.clave, Rol.CLIENTE); advanceUntilIdle()
+        vm.cambiarPerfil(); advanceUntilIdle()
+        assertNull(vm.usuarioActual.value)
+        assertEquals(SesionGuardada("", 0), prefs.actual)
+        vm.login(cliente.correo, cliente.clave, Rol.ADMIN); advanceUntilIdle()
+        assertNull(vm.usuarioActual.value)
+        assertEquals(SesionGuardada("", 0), prefs.actual)
+        vm.cambiarPerfil(); advanceUntilIdle()
+        assertNull(vm.usuarioActual.value)
+    }
+
+    @Test fun cierreExplicitoInvalidaAmbasCuentasRecordadas() = runTest {
+        val prefs = PreferenciasMemoria(); val vm = modelo(prefs)
+        autenticarAmbas(vm)
+        vm.cerrarSesion(); advanceUntilIdle()
+        vm.login(cliente.correo, cliente.clave, Rol.CLIENTE); advanceUntilIdle()
+        vm.cambiarPerfil(); advanceUntilIdle()
+        assertNull(vm.usuarioActual.value)
+        assertEquals(SesionGuardada("", 0), prefs.actual)
+    }
+
+    @Test fun cambioRevalidaRolRealYDescartaCuentaModificada() = runTest {
+        val prefs = PreferenciasMemoria(); val vm = modelo(prefs)
+        autenticarAmbas(vm)
+        usuariosPorId = listOf(cliente.copy(rol = "ADMIN"), soporte)
+        vm.cambiarPerfil(); advanceUntilIdle()
+        assertNull(vm.usuarioActual.value)
+        assertEquals(SesionGuardada("", 0), prefs.actual)
+        assertNotNull(vm.error.value)
+    }
+
+    @Test fun cuentaEliminadaExigeAutenticarseOtraVez() = runTest {
+        val prefs = PreferenciasMemoria(); val vm = modelo(prefs)
+        autenticarAmbas(vm)
+        usuariosPorId = listOf(soporte)
+        vm.cambiarPerfil(); advanceUntilIdle()
+        assertNull(vm.usuarioActual.value)
+        assertEquals(SesionGuardada("", 0), prefs.actual)
+    }
+
+    @Test fun cambioEsperaPersistenciaYBloqueaAccionesSimultaneas() = runTest {
+        val prefs = PreferenciasMemoria(); val vm = modelo(prefs)
+        autenticarAmbas(vm)
+        val pendiente = CompletableDeferred<Unit>(); prefs.sesionPendiente = pendiente
+        vm.cambiarPerfil(); vm.cambiarPerfil(); runCurrent()
+        assertEquals(soporte, vm.usuarioActual.value)
+        assertEquals(SesionGuardada("ADMIN", soporte.id), prefs.actual)
+        vm.cerrarSesion(); vm.guardarModoOscuro(true); runCurrent()
+        assertEquals(soporte, vm.usuarioActual.value)
+        assertFalse(prefs.modoOscuro.value)
+        pendiente.complete(Unit); advanceUntilIdle()
+        assertEquals(cliente, vm.usuarioActual.value)
+        assertEquals(SesionGuardada("CLIENTE", cliente.id), prefs.actual)
+    }
+
+    @Test fun errorDePersistenciaConservaCuentaOriginalYPermiteReintentar() = runTest {
+        val prefs = PreferenciasMemoria(); val vm = modelo(prefs)
+        autenticarAmbas(vm)
+        prefs.falloEscritura = true; vm.cambiarPerfil(); advanceUntilIdle()
+        assertEquals(soporte, vm.usuarioActual.value)
+        assertEquals(SesionGuardada("ADMIN", soporte.id), prefs.actual)
+        assertNotNull(vm.error.value)
+        assertFalse(vm.cerrandoSesion.value)
+        prefs.falloEscritura = false; vm.cambiarPerfil(); advanceUntilIdle()
+        assertEquals(cliente, vm.usuarioActual.value)
+    }
+
+    @Test fun errorAlRevalidarNoCambiaLaCuentaActiva() = runTest {
+        val prefs = PreferenciasMemoria(); val vm = modelo(prefs)
+        autenticarAmbas(vm)
+        falloRepo = true; vm.cambiarPerfil(); advanceUntilIdle()
+        assertEquals(soporte, vm.usuarioActual.value)
+        assertEquals(SesionGuardada("ADMIN", soporte.id), prefs.actual)
+        assertNotNull(vm.error.value)
+    }
+
+    @Test fun reinicioRestauraSoloSesionActivaSinAcreditacionesAdicionales() = runTest {
+        val prefs = PreferenciasMemoria(); val vm = modelo(prefs)
+        autenticarAmbas(vm)
+        val nuevo = modelo(prefs); advanceUntilIdle()
+        assertEquals(soporte, nuevo.usuarioActual.value)
+        assertEquals(2, logins)
+        nuevo.cambiarPerfil(); advanceUntilIdle()
+        assertNull(nuevo.usuarioActual.value)
+        assertEquals(SesionGuardada("", 0), prefs.actual)
+    }
+
+    @Test fun estudianteRestauradoPermiteRetornoDirectoTrasAutenticarSoporte() = runTest {
+        val prefs = PreferenciasMemoria()
+        prefs.guardarSesion(cliente.rol, cliente.id)
+        val vm = modelo(prefs); advanceUntilIdle()
+        assertEquals(cliente, vm.usuarioActual.value)
+        assertEquals(0, logins)
+        vm.cambiarPerfil(); advanceUntilIdle()
+        assertNull(vm.usuarioActual.value)
+        vm.login(soporte.correo, soporte.clave, Rol.ADMIN); advanceUntilIdle()
+        assertEquals(soporte, vm.usuarioActual.value)
+        vm.cambiarPerfil(); advanceUntilIdle()
+        assertEquals(cliente, vm.usuarioActual.value)
+        assertEquals(SesionGuardada("CLIENTE", cliente.id), prefs.actual)
+        vm.cambiarPerfil(); advanceUntilIdle()
+        assertEquals(soporte, vm.usuarioActual.value)
+        assertEquals(1, logins)
+    }
+
+    @Test fun restauracionInvalidaNoRecuerdaCuentasParaCambioDirecto() = runTest {
+        listOf(SesionGuardada("CLIENTE", 999), SesionGuardada("CLIENTE", 0),
+            SesionGuardada("OTRO", cliente.id)).forEach { sesion ->
+            val prefs = PreferenciasMemoria(); prefs.guardarSesion(sesion.rol, sesion.usuarioId)
+            val vm = modelo(prefs); advanceUntilIdle()
+            assertNull(vm.usuarioActual.value)
+            assertEquals(SesionGuardada("", 0), prefs.actual)
+            vm.login(soporte.correo, soporte.clave, Rol.ADMIN); advanceUntilIdle()
+            val antes = consultas
+            vm.cambiarPerfil(); advanceUntilIdle()
+            assertNull(vm.usuarioActual.value)
+            assertEquals(SesionGuardada("", 0), prefs.actual)
+            assertEquals(antes, consultas) // No existe ID recordado que revalidar.
+        }
+    }
+
+    @Test fun restauracionConRolInconsistenteNoConcedeNiRecuerdaSoporte() = runTest {
+        val prefs = PreferenciasMemoria(); prefs.guardarSesion("ADMIN", cliente.id)
+        val vm = modelo(prefs); advanceUntilIdle()
+        assertNull(vm.usuarioActual.value)
+        assertNotNull(vm.error.value)
+        assertEquals(SesionGuardada("", 0), prefs.actual)
+        vm.login(cliente.correo, cliente.clave, Rol.CLIENTE); advanceUntilIdle()
+        val antes = consultas
+        vm.cambiarPerfil(); advanceUntilIdle()
+        assertNull(vm.usuarioActual.value)
+        assertEquals(SesionGuardada("", 0), prefs.actual)
+        assertEquals(antes, consultas)
+    }
+
+    @Test fun cerrarSesionInvalidaTambienLaCuentaRestaurada() = runTest {
+        val prefs = PreferenciasMemoria(); prefs.guardarSesion(cliente.rol, cliente.id)
+        val vm = modelo(prefs); advanceUntilIdle()
+        assertEquals(cliente, vm.usuarioActual.value)
+        vm.cerrarSesion(); advanceUntilIdle()
+        assertNull(vm.usuarioActual.value)
+        vm.login(soporte.correo, soporte.clave, Rol.ADMIN); advanceUntilIdle()
+        val antes = consultas
+        vm.cambiarPerfil(); advanceUntilIdle()
+        assertNull(vm.usuarioActual.value)
+        assertEquals(SesionGuardada("", 0), prefs.actual)
+        assertEquals(antes, consultas)
+    }
+}
