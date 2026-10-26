@@ -6,6 +6,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.outlined.PersonOutline
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.sp
+import com.espiritu.ayudacampus.ui.cliente.superficieEstudiante
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Settings
@@ -92,19 +96,23 @@ fun NavAyuda(vm: SesionViewModel, fabricaTickets: (Usuario) -> AyudaViewModelFac
         AyudaCampusTheme(rol = rol, darkTheme = oscuro) {
             Scaffold(contentWindowInsets = WindowInsets(0, 0, 0, 0), bottomBar = {
                 if (usuario?.rol == Rol.CLIENTE.name && ruta in listOf(Rutas.MIS_TICKETS, Rutas.NUEVO, Rutas.PERFIL, Rutas.DETALLE, Rutas.AJUSTES_CLIENTE)) {
-                    NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+                    val estiloReferencia = ruta in listOf(Rutas.MIS_TICKETS, Rutas.NUEVO)
+                    NavigationBar(containerColor = if (estiloReferencia) superficieEstudiante() else MaterialTheme.colorScheme.surface,
+                        tonalElevation = if (estiloReferencia) 0.dp else 3.dp) {
                         listOf(Triple(Rutas.MIS_TICKETS, "Tickets", Icons.AutoMirrored.Filled.List),
                             Triple(Rutas.NUEVO, "Nuevo", Icons.Default.Add),
-                            Triple(Rutas.PERFIL, "Perfil", Icons.Default.Person)).forEach { (destino, texto, icono) ->
+                            Triple(Rutas.PERFIL, "Perfil", if (estiloReferencia) Icons.Outlined.PersonOutline else Icons.Default.Person)).forEach { (destino, texto, icono) ->
                             NavigationBarItem(selected = ruta == destino || (destino == Rutas.MIS_TICKETS && ruta == Rutas.DETALLE) || (destino == Rutas.PERFIL && ruta == Rutas.AJUSTES_CLIENTE), onClick = {
                                 nav.navigate(destino) {
                                     popUpTo(Rutas.MIS_TICKETS) { saveState = true }
                                     launchSingleTop = true
                                     restoreState = true
                                 }
-                            }, icon = { Icon(icono, contentDescription = null) }, label = { Text(texto) },
+                            }, icon = { Icon(icono, contentDescription = null,
+                                modifier = Modifier.size(if (estiloReferencia) 22.dp else 24.dp)) },
+                                label = { if (estiloReferencia) Text(texto, fontSize = 10.sp) else Text(texto) },
                                 colors = NavigationBarItemDefaults.colors(
-                                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                                    indicatorColor = if (estiloReferencia) Color.Transparent else MaterialTheme.colorScheme.primaryContainer,
                                     selectedIconColor = MaterialTheme.colorScheme.primary,
                                     selectedTextColor = MaterialTheme.colorScheme.primary))
                         }
@@ -153,7 +161,7 @@ fun NavAyuda(vm: SesionViewModel, fabricaTickets: (Usuario) -> AyudaViewModelFac
                         usuario?.takeIf { it.rol == Rol.CLIENTE.name }?.let { estudiante ->
                             val nuevoVm: NuevoTicketViewModel = viewModel(
                                 key = "nuevoTicket-${estudiante.id}", factory = fabricaTickets(estudiante))
-                            NuevoTicketScreen(nuevoVm) {
+                            NuevoTicketScreen(nuevoVm, onVolver = { nav.popBackStack() }) {
                                 // Recrear la lista limpia filtros y posición: el ticket nuevo aparece primero.
                                 nav.navigate(Rutas.MIS_TICKETS) {
                                     popUpTo(Rutas.MIS_TICKETS) { inclusive = true }
