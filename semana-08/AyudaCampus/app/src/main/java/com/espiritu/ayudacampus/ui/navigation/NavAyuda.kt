@@ -32,6 +32,7 @@ import com.espiritu.ayudacampus.ui.cliente.DetalleTicketScreen
 import com.espiritu.ayudacampus.model.Rol
 import com.espiritu.ayudacampus.ui.cliente.LoginScreen
 import com.espiritu.ayudacampus.ui.cliente.SplashScreen
+import com.espiritu.ayudacampus.ui.cliente.BienvenidaScreen
 import com.espiritu.ayudacampus.ui.theme.AyudaCampusTheme
 import com.espiritu.ayudacampus.viewmodel.SesionViewModel
 import com.espiritu.ayudacampus.viewmodel.PanelSoporteViewModel
@@ -57,7 +58,14 @@ fun NavAyuda(vm: SesionViewModel, fabricaTickets: (Usuario) -> AyudaViewModelFac
     val errorInicializacion by vm.errorInicializacion.collectAsStateWithLifecycle()
     val oscuro by vm.modoOscuro.collectAsStateWithLifecycle()
     var rolSeleccionado by rememberSaveable { mutableStateOf(Rol.CLIENTE) }
+    // Se conserva fuera del grafo por cuenta: salir/cambiar de perfil nunca abre bienvenida.
+    var loginSolicitado by rememberSaveable { mutableStateOf(false) }
+    val cerrarSesion: () -> Unit = {
+        loginSolicitado = true
+        vm.cerrarSesion()
+    }
     val cambiarPerfil: () -> Unit = {
+        loginSolicitado = true
         rolSeleccionado = if (usuario?.rol == Rol.ADMIN.name) Rol.CLIENTE else Rol.ADMIN
         vm.cambiarPerfil()
     }
@@ -68,16 +76,17 @@ fun NavAyuda(vm: SesionViewModel, fabricaTickets: (Usuario) -> AyudaViewModelFac
         val nav = rememberNavController()
         val entrada by nav.currentBackStackEntryAsState()
         val ruta = entrada?.destination?.route
-        LaunchedEffect(restaurando, errorInicializacion, usuario, nav) {
-            val destino = when {
-                restaurando || errorInicializacion != null -> Rutas.SPLASH
-                usuario == null -> Rutas.LOGIN
-                usuario?.rol == Rol.ADMIN.name -> Rutas.PANEL
-                else -> Rutas.MIS_TICKETS
-            }
-            nav.navigate(destino) {
-                popUpTo(nav.graph.id) { inclusive = true }
-                launchSingleTop = true
+        LaunchedEffect(restaurando, errorInicializacion, usuario, loginSolicitado, nav) {
+            // Los errores de credenciales no reinician el destino ni los campos del Login.
+            val destino = destinoInicio(restaurando, errorInicializacion != null,
+                usuario?.rol?.let(Rol::valueOf), loginSolicitado)
+            if (usuario != null) loginSolicitado = true
+            if (destino == Rutas.LOGIN) loginSolicitado = true
+            if (nav.currentDestination?.route != destino) {
+                nav.navigate(destino) {
+                    popUpTo(nav.graph.id) { inclusive = true }
+                    launchSingleTop = true
+                }
             }
         }
         AyudaCampusTheme(rol = rol, darkTheme = oscuro) {
@@ -126,6 +135,9 @@ fun NavAyuda(vm: SesionViewModel, fabricaTickets: (Usuario) -> AyudaViewModelFac
             }) { padding ->
                 NavHost(navController = nav, startDestination = Rutas.SPLASH, modifier = Modifier.padding(padding)) {
                     composable(Rutas.SPLASH) { SplashScreen(errorInicializacion) }
+                    composable(Rutas.BIENVENIDA) {
+                        BienvenidaScreen(onIngresar = { loginSolicitado = true })
+                    }
                     composable(Rutas.LOGIN) {
                         LoginScreen(vm, rolSeleccionado, { rolSeleccionado = it })
                     }
@@ -159,14 +171,14 @@ fun NavAyuda(vm: SesionViewModel, fabricaTickets: (Usuario) -> AyudaViewModelFac
                             PerfilScreen(actual, contadores, cerrando || ajustes.guardando, errorSesion,
                                 { perfilVm?.cargar() },
                                 { nav.navigate(if (actual.rol == Rol.ADMIN.name) Rutas.AJUSTES else Rutas.AJUSTES_CLIENTE) { launchSingleTop = true } },
-                                cambiarPerfil, vm::cerrarSesion)
+                                cambiarPerfil, cerrarSesion)
                         }
                     }
                     composable(Rutas.AJUSTES_CLIENTE) {
                         usuario?.takeIf { it.rol == Rol.CLIENTE.name }?.let { actual ->
                             AjustesScreen(actual, ajustes, cerrando, errorSesion, vm::guardarModoOscuro,
                                 vm::guardarNotificaciones, vm::guardarRecibirTickets, vm::cargarAjustes,
-                                { nav.navigate(Rutas.PERFIL) { launchSingleTop = true } }, cambiarPerfil, vm::cerrarSesion)
+                                { nav.navigate(Rutas.PERFIL) { launchSingleTop = true } }, cambiarPerfil, cerrarSesion)
                         }
                     }
                     composable(Rutas.DETALLE, arguments = listOf(navArgument("ticketId") { type = NavType.IntType })) { entradaDetalle ->
@@ -207,7 +219,7 @@ fun NavAyuda(vm: SesionViewModel, fabricaTickets: (Usuario) -> AyudaViewModelFac
                         SoloSoporte(usuario) { actual ->
                             AjustesScreen(actual, ajustes, cerrando, errorSesion, vm::guardarModoOscuro,
                                 vm::guardarNotificaciones, vm::guardarRecibirTickets, vm::cargarAjustes,
-                                { nav.navigate(Rutas.PERFIL) { launchSingleTop = true } }, cambiarPerfil, vm::cerrarSesion)
+                                { nav.navigate(Rutas.PERFIL) { launchSingleTop = true } }, cambiarPerfil, cerrarSesion)
                         }
                     }
                     composable(Rutas.ATENDER, arguments = listOf(navArgument("ticketId") { type = NavType.IntType })) { entradaAtender ->

@@ -47,6 +47,12 @@ En macOS/Linux, usar `./gradlew` en lugar de `.\gradlew.bat`. El APK debug se ge
 
 El primer arranque carga datos de demostración mediante `DatosIniciales`. La sesión espera esa inicialización antes de autenticarse o restaurarse. Las instalaciones nuevas parten de esos datos; las capturas muestran una base de práctica ya utilizada. Para conservar datos existentes, no desinstalar ni borrar el almacenamiento de la aplicación. Las pruebas instrumentadas requieren una autorización y protección de datos independientes; no forman parte de los comandos anteriores.
 
+### Bienvenida y acceso
+
+Tras la carga inicial, un arranque sin sesión válida muestra la bienvenida de AyudaCampus. Una sesión válida conserva el acceso directo a su pantalla principal. Cerrar sesión o cambiar a un perfil que necesita autenticarse abre Login directamente.
+
+**Limitación temporal:** tanto «Comenzar» como «Ya tengo una cuenta» abren Login; todavía no existe Registro. Los enlaces «Regístrate» y «¿Olvidaste tu contraseña?» muestran un aviso de función no disponible: no crean cuentas ni envían correos. El Login mantiene la validación de credenciales y roles, y el modo oscuro persistente.
+
 ## Funcionalidades del Estudiante
 
 - **Mis tickets:** lista reactiva de los tickets propios, búsqueda por número o título y filtros Todos, Abiertos, En proceso y Resueltos; tarjetas con categoría, estado y prioridad.
@@ -128,7 +134,9 @@ com.espiritu.ayudacampus/
 │   └── Rol.kt
 ├── ui/
 │   ├── cliente/
+│   │   ├── BienvenidaScreen.kt
 │   │   ├── DetalleTicketScreen.kt
+│   │   ├── IconoAcceso.kt
 │   │   ├── LoginScreen.kt
 │   │   ├── MisTicketsScreen.kt
 │   │   ├── NuevoTicketScreen.kt
@@ -149,6 +157,7 @@ com.espiritu.ayudacampus/
 │   │       ├── GraficoBarras.kt
 │   │       └── GraficoDona.kt
 │   ├── navigation/
+│   │   ├── InicioAyuda.kt
 │   │   ├── NavAyuda.kt
 │   │   └── Rutas.kt
 │   ├── soporte/
@@ -228,7 +237,7 @@ Estas restricciones corresponden a una práctica local, no a autorización de un
 
 ## Pruebas y verificaciones
 
-**148 pruebas unitarias aprobadas, 0 fallos, 0 errores y 0 omitidas**, distribuidas en 12 clases de prueba. También se verificó `:app:assembleDebug` para el cierre de la fase base.
+**155 pruebas unitarias aprobadas, 0 fallos, 0 errores y 0 omitidas**, distribuidas en 13 clases de prueba. Incluyen siete pruebas de decisión de navegación inicial añadidas con el rediseño de bienvenida y Login. También se verificó `:app:assembleDebug`. La comparación visual de Bienvenida, Login Estudiante y Login Soporte TI en modo claro fue completada y aprobada por el usuario. Se verificaron campos vacíos con etiquetas persistentes, ausencia de recortes y conservación de Room y DataStore.
 
 Las pruebas de `app/src/test/` cubren sesión y ajustes, filtros y búsquedas, validaciones de creación, detalle y comentarios, cierre/calificación y reapertura, panel y alertas temporales, bandeja, atención, categorías, restricciones por rol y pluralización. Incluyen cambio directo entre cuentas autenticadas, restauración válida, rechazo de sesiones inconsistentes, invalidación al cerrar sesión y fallos de persistencia. Se utilizan fakes del repositorio y herramientas de prueba de corrutinas; no equivalen a ejecutar Room real ni a probar la UI en un dispositivo.
 
@@ -236,7 +245,7 @@ Las comprobaciones **manuales en emulador** incluyeron navegación, carga de tic
 
 En el AVD independiente `AyudaCampus_Aceptacion_Fase1` se aprobaron **12/12 casos de aceptación** de las páginas 23–24 de la guía y la prueba adicional de recepción de tickets. La versión corregida del cambio de perfil se verificó visualmente partiendo de una sesión del estudiante restaurada: primera autenticación de soporte, cambios directos en ambos sentidos, identidades y navegación correctas e invalidación tras cerrar sesión explícitamente. La comparación final confirmó Room intacto: 2 usuarios, 6 categorías, 7 tickets y 5 comentarios. Este entorno de aceptación es independiente del utilizado para las seis capturas siguientes.
 
-Existen pruebas instrumentadas en el proyecto, pero el resultado de 148 corresponde exclusivamente a pruebas unitarias JVM. No se ejecutaron pruebas instrumentadas para las últimas verificaciones ni para preparar estas evidencias.
+Existen pruebas instrumentadas en el proyecto, pero el resultado de 155 corresponde exclusivamente a pruebas unitarias JVM. No se ejecutaron pruebas instrumentadas para las últimas verificaciones ni para preparar estas evidencias.
 
 Durante la captura de evidencias se confirmó integridad SQLite correcta, ausencia de errores de claves foráneas y conservación exacta de **2 usuarios, 5 categorías, 6 tickets y 5 comentarios**. Al terminar quedó la sesión del estudiante, modo oscuro desactivado, notificaciones y recepción activadas. Estas cifras describen ese estado de práctica, no son valores fijos de la aplicación.
 
