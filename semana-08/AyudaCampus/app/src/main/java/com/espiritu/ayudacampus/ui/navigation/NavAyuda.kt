@@ -59,7 +59,7 @@ fun NavAyuda(vm: SesionViewModel, fabricaTickets: (Usuario) -> AyudaViewModelFac
     var rolSeleccionado by rememberSaveable { mutableStateOf(Rol.CLIENTE) }
     val cambiarPerfil: () -> Unit = {
         rolSeleccionado = if (usuario?.rol == Rol.ADMIN.name) Rol.CLIENTE else Rol.ADMIN
-        vm.cerrarSesion()
+        vm.cambiarPerfil()
     }
     val rol = usuario?.rol?.let { Rol.valueOf(it) } ?: rolSeleccionado
     // El controlador y su host comparten identidad y ciclo de vida por cuenta.

@@ -42,7 +42,7 @@ fun PerfilScreen(usuario: Usuario, contadores: PerfilUiState?, ocupado: Boolean,
                 }
             }
             AyudaButton("Ajustes", onAjustes, Modifier.fillMaxWidth(), enabled = !ocupado)
-            Text("Para cambiar de perfil, inicia sesión con una cuenta del otro rol.")
+            Text("Autentica cada cuenta una vez para cambiar directamente. Cerrar sesión olvida las cuentas recordadas.")
             AyudaButton("Cambiar de perfil", onCambiarPerfil, Modifier.fillMaxWidth(), enabled = !ocupado)
             OutlinedButton(onClick = onCerrarSesion, modifier = Modifier.fillMaxWidth(), enabled = !ocupado) { Text("Cerrar sesión") }
             if (ocupado) LinearProgressIndicator(Modifier.fillMaxWidth())
