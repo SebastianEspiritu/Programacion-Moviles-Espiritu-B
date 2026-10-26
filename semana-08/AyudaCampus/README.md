@@ -237,17 +237,18 @@ Estas restricciones corresponden a una práctica local, no a autorización de un
 
 ## Pruebas y verificaciones
 
-**155 pruebas unitarias aprobadas, 0 fallos, 0 errores y 0 omitidas**, distribuidas en 13 clases de prueba. Incluyen siete pruebas de decisión de navegación inicial añadidas con el rediseño de bienvenida y Login. También se verificó `:app:assembleDebug`. La comparación visual de Bienvenida, Login Estudiante y Login Soporte TI en modo claro fue completada y aprobada por el usuario. Se verificaron campos vacíos con etiquetas persistentes, ausencia de recortes y conservación de Room y DataStore.
+**175 pruebas unitarias aprobadas, 0 fallos, 0 errores y 0 omitidas**, distribuidas en 15 clases de prueba. Incluyen las pruebas de la Fase Base y las de la Fase 2 (calculador SLA, tiempo promedio de resolución y búsqueda avanzada combinada por texto, categoría y prioridad). También se verificó `:app:assembleDebug`.
 
-Las pruebas de `app/src/test/` cubren sesión y ajustes, filtros y búsquedas, validaciones de creación, detalle y comentarios, cierre/calificación y reapertura, panel y alertas temporales, bandeja, atención, categorías, restricciones por rol y pluralización. Incluyen cambio directo entre cuentas autenticadas, restauración válida, rechazo de sesiones inconsistentes, invalidación al cerrar sesión y fallos de persistencia. Se utilizan fakes del repositorio y herramientas de prueba de corrutinas; no equivalen a ejecutar Room real ni a probar la UI en un dispositivo.
+Las pruebas de `app/src/test/` cubren sesión y ajustes, filtros y búsquedas combinadas, validaciones de creación, detalle y comentarios, cierre/calificación y reapertura, panel, tiempo promedio de resolución, alertas temporales, contador SLA por prioridad, bandeja, atención, categorías, restricciones por rol y pluralización. Se utilizan fakes del repositorio y herramientas de prueba de corrutinas; no equivalen a ejecutar Room real ni a probar la UI en un dispositivo.
 
-Las comprobaciones **manuales en emulador** incluyeron navegación, carga de tickets y contadores, Perfil, persistencia de preferencias y sesión, cambio de cuenta, modo oscuro global, contraste de barras del sistema y pluralización. Las funciones de atención y categorías también se comprobaron manualmente durante el commit 12.
+## Fase 2 — Mejoras con IA (Rama `con-ia`)
 
-En el AVD independiente `AyudaCampus_Aceptacion_Fase1` se aprobaron **12/12 casos de aceptación** de las páginas 23–24 de la guía y la prueba adicional de recepción de tickets. La versión corregida del cambio de perfil se verificó visualmente partiendo de una sesión del estudiante restaurada: primera autenticación de soporte, cambios directos en ambos sentidos, identidades y navegación correctas e invalidación tras cerrar sesión explícitamente. La comparación final confirmó Room intacto: 2 usuarios, 6 categorías, 7 tickets y 5 comentarios. Este entorno de aceptación es independiente del utilizado para las seis capturas siguientes.
+En la Fase 2 del proyecto se implementaron las siguientes tres mejoras funcionales avanzadas:
+1. **Mejora A (Commit `25d949f`):** Tiempo promedio de resolución en el panel de soporte calculando `fechaCierre - fecha` sobre tickets cerrados.
+2. **Mejora B (Commit `821672f`):** Contador SLA por prioridad (ALTA = 4h, MEDIA = 24h, BAJA = 72h) con reloj en tiempo real e indicadores visuales de plazo o vencimiento.
+3. **Mejora C (Commit `c4ff402`):** Búsqueda avanzada combinada en la bandeja de Soporte TI por texto, categoría y prioridad mediante condición `AND` y botón de restablecer filtros.
 
-Existen pruebas instrumentadas en el proyecto, pero el resultado de 155 corresponde exclusivamente a pruebas unitarias JVM. No se ejecutaron pruebas instrumentadas para las últimas verificaciones ni para preparar estas evidencias.
-
-Durante la captura de evidencias se confirmó integridad SQLite correcta, ausencia de errores de claves foráneas y conservación exacta de **2 usuarios, 5 categorías, 6 tickets y 5 comentarios**. Al terminar quedó la sesión del estudiante, modo oscuro desactivado, notificaciones y recepción activadas. Estas cifras describen ese estado de práctica, no son valores fijos de la aplicación.
+La documentación detallada del uso de IA, los prompts aplicados y la reflexión personal se encuentran en **`PROMPTS.md`**.
 
 ## Evidencias
 
@@ -283,14 +284,14 @@ Seis capturas actuales del emulador, tres por perfil. Las capturas se obtuvieron
 
 ## Para pensar
 
-**Borrador para revisión personal antes de entregar.** Preguntas de la sección 10 de la guía `GLAB-S08-JLEONS-2026_B.pdf` (página 26). Las cuatro respuestas ocupan cuatro líneas de fuente en total.
+Respuestas a las preguntas de la sección 10 de la guía `GLAB-S08-JLEONS-2026_B.pdf`:
 
 | Pregunta | Respuesta breve |
 |---|---|
-| ¿Por qué las reglas de estado están en el ViewModel y no en el DAO ni en el Composable? | El ViewModel decide las acciones según usuario y estado, independientemente de la UI; el DAO persiste y el Composable presenta, con validaciones adicionales en el repositorio. |
-| ¿Por qué crearTicket es suspend y observarTicket es Flow? | Crear es una operación puntual que suspende sin bloquear; observar emite el detalle inicial y sus cambios para actualizar la pantalla. |
-| ¿Qué pasaría si un ticket pudiera cerrarse sin calificación? | Se rompería el contrato de cierre de AyudaCampus y faltaría la valoración del estudiante; por eso se exige un valor de 1 a 5. |
-| ¿Qué debería cambiar si mañana los tickets viven en un servidor? | Se implementaría AyudaRepository con una fuente remota y autenticación/autorización del servidor, conservando el contrato y adaptando errores y observación de cambios. |
+| ¿Por qué las reglas de estado están en el ViewModel y no en el DAO ni en el Composable? | El ViewModel decide las acciones según usuario y estado, manteniendo la UI declarativa y el DAO enfocado en SQLite. |
+| ¿Por qué crearTicket es suspend y observarTicket es Flow? | Crear ticket es una operación puntual de un solo resultado que suspende, mientras que observar emite un flujo continuo reactivo ante cambios en Room. |
+| ¿Qué pasaría si un ticket pudiera cerrarse sin calificación? | Se rompería la regla de negocio de AyudaCampus que exige la evaluación del estudiante (1 a 5 estrellas) para medir la calidad del servicio. |
+| ¿Qué debería cambiar si mañana los tickets viven en un servidor? | `AyudaRepository` se implementaría con cliente HTTP (Retrofit/Ktor) y tokens de autenticación, manteniendo los ViewModels y la UI totalmente intactos. |
 
 ## Limitaciones y alcance académico
 
@@ -298,5 +299,4 @@ Seis capturas actuales del emulador, tres por perfil. Las capturas se obtuvieron
 - Notificaciones es una preferencia persistida: no implementa envío de avisos, notificaciones push ni tareas de entrega en segundo plano.
 - La autenticación local con cuentas de demostración requiere reemplazo para un entorno real; no deben utilizarse credenciales ni datos personales reales.
 - El cambio directo requiere que ambas cuentas hayan sido autenticadas o restauradas válidamente y estén recordadas en memoria. El primer acceso a la otra cuenta sigue exigiendo credenciales, como protección del rol; esta condición limita el cambio incondicional propuesto por la guía.
-- Este README documenta el estado funcional y las evidencias de la fase base. No acredita mejoras de la fase posterior en `mejora-ia` ni sustituye su `PROMPTS.md`.
-- Se utilizó asistencia de IA durante el trabajo y la documentación; esta entrega no afirma un desarrollo sin IA. Las respuestas de reflexión deben revisarse y expresarse personalmente antes de entregar.
+- La guía del laboratorio menciona como denominación genérica la rama `mejora-ia`. En este repositorio la rama activa de la Fase 2 es `con-ia`, publicada en `origin/con-ia`.
