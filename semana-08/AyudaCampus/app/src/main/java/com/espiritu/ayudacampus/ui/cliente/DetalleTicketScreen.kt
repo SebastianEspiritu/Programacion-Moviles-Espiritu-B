@@ -158,6 +158,7 @@ fun DetalleTicketScreen(vm: DetalleTicketViewModel, onVolver: () -> Unit) {
                                     ) {
                                         EstadoChip(ticket.estado)
                                         PrioridadChip(ticket.prioridad)
+                                        SlaChip(detalle, ahora)
                                     }
                                     Row(
                                         horizontalArrangement = Arrangement.spacedBy(6.dp),

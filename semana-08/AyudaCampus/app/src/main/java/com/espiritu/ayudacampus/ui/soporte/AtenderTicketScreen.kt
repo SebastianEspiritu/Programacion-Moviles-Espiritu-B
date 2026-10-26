@@ -26,6 +26,7 @@ import com.espiritu.ayudacampus.ui.cliente.superficieEstudiante
 import com.espiritu.ayudacampus.ui.components.*
 import com.espiritu.ayudacampus.ui.theme.colorPrioridad
 import com.espiritu.ayudacampus.viewmodel.AtenderViewModel
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -34,6 +35,9 @@ fun AtenderTicketScreen(vm: AtenderViewModel, onVolver: () -> Unit) {
     val detalle = estado.ticket
     val colores = MaterialTheme.colorScheme
     val avisos = remember { SnackbarHostState() }
+    val ahora by produceState(System.currentTimeMillis()) {
+        while (true) { delay(60_000L); value = System.currentTimeMillis() }
+    }
 
     LaunchedEffect(estado.error, estado.mensaje) {
         (estado.error ?: estado.mensaje)?.let { avisos.showSnackbar(it) }
@@ -153,6 +157,7 @@ fun AtenderTicketScreen(vm: AtenderViewModel, onVolver: () -> Unit) {
                                     ) {
                                         EstadoChip(ticket.estado)
                                         PrioridadChip(ticket.prioridad)
+                                        SlaChip(detalle, ahora)
                                     }
                                     Row(
                                         horizontalArrangement = Arrangement.spacedBy(6.dp),

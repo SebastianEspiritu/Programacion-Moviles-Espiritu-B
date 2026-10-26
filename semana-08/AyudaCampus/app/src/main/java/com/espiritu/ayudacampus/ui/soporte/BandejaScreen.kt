@@ -20,6 +20,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.espiritu.ayudacampus.model.EstadoTicket
 import com.espiritu.ayudacampus.ui.components.*
 import com.espiritu.ayudacampus.viewmodel.BandejaViewModel
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,6 +30,9 @@ fun BandejaScreen(vm: BandejaViewModel, onAtender: (Int) -> Unit) {
     val busqueda by vm.busqueda.collectAsStateWithLifecycle()
     val soloAlertas by vm.soloAlertas.collectAsStateWithLifecycle()
     val colores = MaterialTheme.colorScheme
+    val ahora by produceState(System.currentTimeMillis()) {
+        while (true) { delay(60_000L); value = System.currentTimeMillis() }
+    }
 
     Scaffold(
         containerColor = colores.background,
@@ -122,7 +126,12 @@ fun BandejaScreen(vm: BandejaViewModel, onAtender: (Int) -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(estado.tickets, key = { it.ticket.id }) { detalle ->
-                        TicketCard(detalle, { onAtender(detalle.ticket.id) }, mostrarCliente = true)
+                        TicketCard(
+                            detalle = detalle,
+                            onClick = { onAtender(detalle.ticket.id) },
+                            mostrarCliente = true,
+                            ahora = ahora
+                        )
                     }
                 }
             }
