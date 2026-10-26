@@ -50,6 +50,11 @@ internal class SoporteRepositoryFake {
                     it.ticket.prioridad == "ALTA" && it.ticket.estado == "ABIERTO" && it.ticket.fecha < limite
                 } })
             }
+            "observarTiempoPromedioResolucion" -> lectura(metodo.name, lista.map { tickets ->
+                val cerrados = tickets.map { it.ticket }.filter { it.estado == "CERRADO" && it.fechaCierre != null && it.fechaCierre >= it.fecha }
+                if (cerrados.isEmpty()) null
+                else cerrados.map { it.fechaCierre!! - it.fecha }.average().toLong()
+            })
             "observarTodosLosTickets" -> lectura(metodo.name, lista.map { tickets ->
                 tickets.sortedWith(compareBy<TicketConDetalle> { when (it.ticket.prioridad) {
                     "ALTA" -> 0; "MEDIA" -> 1; else -> 2

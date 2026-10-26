@@ -3,9 +3,11 @@ package com.espiritu.ayudacampus.ui.soporte
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -60,12 +62,61 @@ fun PanelSoporteScreen(vm: PanelSoporteViewModel, onVerAlertas: () -> Unit) {
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Tarjetas de contadores con fondos pastel y colores intensos
+                // Tarjetas de contadores (Abiertos, En proceso, Resueltos)
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                         Contador("Abiertos", estado.conteos[EstadoTicket.ABIERTO] ?: 0, Color(0xFFFFFAED), Color(0xFFE65100), Color(0xFFFFCC80), Modifier.weight(1f))
                         Contador("En proceso", estado.conteos[EstadoTicket.EN_PROCESO] ?: 0, Color(0xFFE3F2FD), Color(0xFF1976D2), Color(0xFF90CAF9), Modifier.weight(1f))
                         Contador("Resueltos", estado.conteos[EstadoTicket.RESUELTO] ?: 0, Color(0xFFF1F8F5), Color(0xFF2E7D32), Color(0xFFA5D6A7), Modifier.weight(1f))
+                    }
+                }
+
+                // Tarjeta Tiempo Promedio de Resolución (Mejora A)
+                item {
+                    Card(
+                        Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF3E5F5)),
+                        border = BorderStroke(1.dp, Color(0xFFE1BEE7))
+                    ) {
+                        Row(
+                            Modifier.padding(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = Color(0xFFBA68C8)
+                            ) {
+                                Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.Outlined.Schedule,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(22.dp),
+                                        tint = Color.White
+                                    )
+                                }
+                            }
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(
+                                    "Tiempo promedio de resolución",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFF4A148C)
+                                )
+                                Text(
+                                    estado.tiempoPromedioFormateado,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF6A1B9A)
+                                )
+                                Text(
+                                    "Calculado sobre tickets cerrados (fechaCierre - fecha)",
+                                    fontSize = 10.sp,
+                                    color = Color(0xFF7B1FA2)
+                                )
+                            }
+                        }
                     }
                 }
 

@@ -119,6 +119,45 @@ class PanelSoporteViewModelTest {
         assertEquals(1, vm.porEstado.value.last().valor)
     }
 
+    @Test fun calculaTiempoPromedioDeResolucionSoloEnTicketsCerrados() = runTest {
+        val f1 = 1_000_000L
+        val c1 = f1 + (2 * 3_600_000L) // 2 horas
+        val f2 = 2_000_000L
+        val c2 = f2 + (1 * 3_600_000L) + (30 * 60_000L) // 1 h 30 min
+        val ticketCerrado1 = datos.ticket(1, "CERRADO", fecha = f1).let {
+            it.copy(ticket = it.ticket.copy(fechaCierre = c1))
+        }
+        val ticketCerrado2 = datos.ticket(2, "CERRADO", fecha = f2).let {
+            it.copy(ticket = it.ticket.copy(fechaCierre = c2))
+        }
+        val ticketAbierto = datos.ticket(3, "ABIERTO", fecha = f1)
+
+        datos.lista.value = listOf(ticketCerrado1, ticketCerrado2, ticketAbierto)
+        val vm = modelo(); runCurrent()
+
+        // Promedio = (2h + 1.5h)/2 = 1.75h = 1h 45min = 6_300_000 ms
+        assertEquals(6_300_000L, vm.uiState.value.tiempoPromedioMs)
+        assertEquals("1 h 45 min", vm.uiState.value.tiempoPromedioFormateado)
+    }
+
+    @Test fun muestraSinDatosCuandoNoHayTicketsCerrados() = runTest {
+        datos.lista.value = listOf(datos.ticket(1, "ABIERTO"), datos.ticket(2, "RESUELTO"))
+        val vm = modelo(); runCurrent()
+
+        assertNull(vm.uiState.value.tiempoPromedioMs)
+        assertEquals("Sin datos", vm.uiState.value.tiempoPromedioFormateado)
+    }
+
+    @Test fun formateaCorrectamenteDuracionesEnHorasYMinutos() {
+        assertEquals("Sin datos", formatearTiempoPromedio(null))
+        assertEquals("Sin datos", formatearTiempoPromedio(-1000L))
+        assertEquals("< 1 min", formatearTiempoPromedio(30_000L))
+        assertEquals("15 min", formatearTiempoPromedio(15 * 60_000L))
+        assertEquals("2 h", formatearTiempoPromedio(2 * 3_600_000L))
+        assertEquals("3 h 20 min", formatearTiempoPromedio(3 * 3_600_000L + 20 * 60_000L))
+        assertEquals("1 d 2 h", formatearTiempoPromedio(26 * 3_600_000L))
+    }
+
     @Test fun dejaDeActualizarElRelojSinSuscriptores() = runTest {
         val vm = PanelSoporteViewModel(datos.repo, datos.soporte) { ahora + testScheduler.currentTime }; modelos += vm
         val colector = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect() }

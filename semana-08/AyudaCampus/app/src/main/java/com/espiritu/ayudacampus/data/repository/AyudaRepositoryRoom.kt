@@ -10,6 +10,7 @@ import com.espiritu.ayudacampus.model.ConteoCategoria
 import com.espiritu.ayudacampus.model.EstadoTicket
 import com.espiritu.ayudacampus.model.Prioridad
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import androidx.room.withTransaction
 import com.espiritu.ayudacampus.model.ICONOS_CATEGORIA
 
@@ -195,5 +196,11 @@ class AyudaRepositoryRoom(
         limite: Long
     ): Flow<Int> {
         return ticketDao.contarAltasSinAtender(limite)
+    }
+
+    override fun observarTiempoPromedioResolucion(): Flow<Long?> {
+        return ticketDao.observarTiempoPromedioResolucion().map { avg ->
+            avg?.toLong()?.takeIf { it >= 0 }
+        }
     }
 }
