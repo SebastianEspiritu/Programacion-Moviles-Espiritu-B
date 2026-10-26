@@ -1,81 +1,172 @@
 package com.espiritu.ayudacampus.ui.soporte
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.espiritu.ayudacampus.model.EstadoTicket
 import com.espiritu.ayudacampus.ui.components.*
 import com.espiritu.ayudacampus.ui.components.graficos.*
-import com.espiritu.ayudacampus.ui.theme.*
 import com.espiritu.ayudacampus.viewmodel.PanelSoporteViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PanelSoporteScreen(vm: PanelSoporteViewModel, onVerAlertas: () -> Unit) {
     val estado by vm.uiState.collectAsStateWithLifecycle()
-    Scaffold(topBar = { AppTopBar("Panel de soporte") }) { padding ->
+    val colores = MaterialTheme.colorScheme
+
+    Scaffold(
+        containerColor = colores.background,
+        topBar = {
+            Row(
+                Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars)
+                    .padding(start = 20.dp, end = 8.dp, top = 12.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Panel de soporte", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = colores.onBackground)
+                    Spacer(Modifier.height(4.dp))
+                    Text("Mesa de ayuda TI \u00b7 Hoy", fontSize = 12.sp, color = colores.onSurfaceVariant)
+                }
+                IconButton(onClick = onVerAlertas) {
+                    Icon(Icons.Default.Notifications, "Notificaciones", Modifier.size(22.dp), tint = colores.onBackground)
+                }
+            }
+        }
+    ) { padding ->
         when {
-            estado.cargando -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-            estado.error != null -> Column(Modifier.padding(padding).padding(24.dp)) {
-                Text(estado.error.orEmpty(), color = MaterialTheme.colorScheme.error)
+            estado.cargando -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+            estado.error != null -> Column(Modifier.padding(padding).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(estado.error.orEmpty(), color = colores.error)
+                Spacer(Modifier.height(12.dp))
                 AyudaButton("Reintentar", vm::reintentar)
             }
-            else -> LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            else -> LazyColumn(
+                Modifier.fillMaxSize().padding(padding),
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Tarjetas de contadores con fondos pastel y colores intensos
                 item {
-                    Text("Hola, ${vm.usuario.nombre}", style = MaterialTheme.typography.headlineSmall)
-                    Text("Resumen de la mesa de ayuda")
-                }
-                item {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Contador("Abiertos", estado.conteos[EstadoTicket.ABIERTO] ?: 0, EstadoAbierto, Modifier.weight(1f))
-                        Contador("En proceso", estado.conteos[EstadoTicket.EN_PROCESO] ?: 0, EstadoEnProceso, Modifier.weight(1f))
-                        Contador("Resueltos", estado.conteos[EstadoTicket.RESUELTO] ?: 0, EstadoResuelto, Modifier.weight(1f))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        Contador("Abiertos", estado.conteos[EstadoTicket.ABIERTO] ?: 0, Color(0xFFFFFAED), Color(0xFFE65100), Color(0xFFFFCC80), Modifier.weight(1f))
+                        Contador("En proceso", estado.conteos[EstadoTicket.EN_PROCESO] ?: 0, Color(0xFFE3F2FD), Color(0xFF1976D2), Color(0xFF90CAF9), Modifier.weight(1f))
+                        Contador("Resueltos", estado.conteos[EstadoTicket.RESUELTO] ?: 0, Color(0xFFF1F8F5), Color(0xFF2E7D32), Color(0xFFA5D6A7), Modifier.weight(1f))
                     }
                 }
-                item { Text("Cerrados: ${estado.conteos[EstadoTicket.CERRADO] ?: 0} · Total: ${estado.total}") }
-                if (estado.altasSinAtender > 0) item {
-                    Surface(color = MaterialTheme.colorScheme.errorContainer, shape = MaterialTheme.shapes.medium) {
-                        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("${estado.altasSinAtender} tickets de prioridad ALTA sin atención", style = MaterialTheme.typography.titleMedium)
-                            Text("Abiertos desde hace más de 1 hora.")
-                            AyudaButton("Ver", onVerAlertas)
+
+                if (estado.total == 0) {
+                    item {
+                        Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                            Text("No hay tickets registrados.", color = colores.onSurfaceVariant)
                         }
                     }
                 }
-                if (estado.total == 0) item { Text("No hay tickets registrados.") }
+
+                // Gráfico de dona (Tickets por estado)
                 item {
                     SeccionGrafico("Tickets por estado") {
-                        GraficoDona(estado.porEstado, listOf(EstadoAbierto, EstadoEnProceso, EstadoResuelto, EstadoCerrado))
+                        GraficoDona(
+                            estado.porEstado,
+                            listOf(Color(0xFFFFB300), Color(0xFF1976D2), Color(0xFF2E7D32), Color(0xFF78909C))
+                        )
                     }
                 }
-                item { SeccionGrafico("Tickets por categoría") { GraficoBarras(estado.porCategoria) } }
+
+                // Gráfico de barras (Tickets por categoría)
+                item {
+                    SeccionGrafico("Tickets por categoría") {
+                        GraficoBarras(estado.porCategoria)
+                    }
+                }
+
+                // Alerta de prioridad alta sin atender (ubicada DEBAJO de los dos gráficos, como en la guía)
+                if (estado.altasSinAtender > 0) {
+                    item {
+                        Card(
+                            Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                            border = BorderStroke(1.dp, Color(0xFFEF9A9A))
+                        ) {
+                            Row(
+                                Modifier.padding(16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Outlined.Warning, null, tint = Color(0xFFC62828), modifier = Modifier.size(28.dp))
+                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                    Text(
+                                        "${estado.altasSinAtender} tickets de prioridad Alta",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFFC62828)
+                                    )
+                                    Text(
+                                        "sin atender hace más de 1 hora",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFFB71C1C)
+                                    )
+                                }
+                                Button(
+                                    onClick = onVerAlertas,
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)),
+                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                                ) {
+                                    Text("Ver", fontSize = 12.sp, color = Color.White)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                item { Spacer(Modifier.height(32.dp)) }
             }
         }
     }
 }
 
 @Composable
-private fun Contador(titulo: String, valor: Int, color: Color, modifier: Modifier) {
-    Surface(modifier, color = color.copy(alpha = .12f), shape = MaterialTheme.shapes.medium) {
-        Column(Modifier.padding(10.dp)) {
-            Text(valor.toString(), color = color, style = MaterialTheme.typography.headlineMedium)
-            Text(titulo, style = MaterialTheme.typography.labelMedium)
+private fun Contador(titulo: String, valor: Int, bgColor: Color, textColor: Color, borderColor: Color, modifier: Modifier) {
+    Card(
+        modifier,
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = bgColor),
+        border = BorderStroke(1.dp, borderColor)
+    ) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(valor.toString(), color = textColor, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            Text(titulo, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = textColor)
         }
     }
 }
 
 @Composable
 private fun SeccionGrafico(titulo: String, contenido: @Composable () -> Unit) {
-    Surface(color = MaterialTheme.colorScheme.surface, shape = MaterialTheme.shapes.medium,
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(titulo, style = MaterialTheme.typography.titleLarge)
+    val colores = MaterialTheme.colorScheme
+    Card(
+        Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = colores.surface),
+        border = BorderStroke(.75.dp, colores.outlineVariant)
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(titulo, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colores.onSurface)
             contenido()
         }
     }
