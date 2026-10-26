@@ -2,6 +2,7 @@ package com.espiritu.ayudacampus.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.espiritu.ayudacampus.model.EstadoTicket
+import com.espiritu.ayudacampus.model.Prioridad
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.test.*
@@ -16,8 +17,10 @@ class BandejaViewModelTest {
     private val datos = SoporteRepositoryFake()
     private val modelos = mutableListOf<BandejaViewModel>()
     private val ahora = 10_000_000L
+
     @Before fun preparar() { Dispatchers.setMain(dispatcher) }
     @After fun limpiar() { modelos.forEach { it.viewModelScope.cancel() }; Dispatchers.resetMain() }
+
     private fun TestScope.modelo(alertas: Boolean = false): BandejaViewModel {
         val vm = BandejaViewModel(datos.repo, datos.soporte, alertas) { ahora + testScheduler.currentTime }
         modelos += vm
@@ -59,6 +62,79 @@ class BandejaViewModelTest {
             assertEquals(23, vm.uiState.value.tickets.single().ticket.id)
         }
         vm.filtrar(EstadoTicket.ABIERTO); runCurrent(); assertTrue(vm.uiState.value.tickets.isEmpty())
+    }
+
+    @Test fun filtraPorSoloPrioridad() = runTest {
+        datos.lista.value = listOf(
+            datos.ticket(1, prioridad = "ALTA"),
+            datos.ticket(2, prioridad = "MEDIA"),
+            datos.ticket(3, prioridad = "BAJA")
+        )
+        val vm = modelo(); runCurrent()
+        vm.filtrarPrioridad(Prioridad.ALTA); runCurrent()
+        assertEquals(1, vm.uiState.value.tickets.single().ticket.id)
+
+        vm.filtrarPrioridad(Prioridad.BAJA); runCurrent()
+        assertEquals(3, vm.uiState.value.tickets.single().ticket.id)
+    }
+
+    @Test fun filtraPorSoloCategoria() = runTest {
+        datos.lista.value = listOf(
+            datos.ticket(1, categoriaId = 1),
+            datos.ticket(2, categoriaId = 2)
+        )
+        val vm = modelo(); runCurrent()
+        vm.filtrarCategoria(2); runCurrent()
+        assertEquals(2, vm.uiState.value.tickets.single().ticket.id)
+    }
+
+    @Test fun combinaFiltrosTextoCategoriaYPrioridad() = runTest {
+        datos.lista.value = listOf(
+            datos.ticket(1, titulo = "Servidor caido", prioridad = "ALTA", categoriaId = 1),
+            datos.ticket(2, titulo = "Impresora sin papel", prioridad = "ALTA", categoriaId = 1),
+            datos.ticket(3, titulo = "Servidor de pruebas", prioridad = "MEDIA", categoriaId = 1),
+            datos.ticket(4, titulo = "Servidor caido", prioridad = "ALTA", categoriaId = 2)
+        )
+        val vm = modelo(); runCurrent()
+
+        // Búsqueda combinada: Texto "Servidor" + Prioridad ALTA + Categoría 1
+        vm.buscar("servidor")
+        vm.filtrarPrioridad(Prioridad.ALTA)
+        vm.filtrarCategoria(1)
+        runCurrent()
+
+        assertEquals(1, vm.uiState.value.tickets.single().ticket.id)
+    }
+
+    @Test fun sinCoincidenciasDevuelveListaVacia() = runTest {
+        datos.lista.value = listOf(datos.ticket(1, titulo = "Falla de red", prioridad = "BAJA", categoriaId = 1))
+        val vm = modelo(); runCurrent()
+
+        vm.buscar("servidor")
+        runCurrent()
+
+        assertTrue(vm.uiState.value.tickets.isEmpty())
+    }
+
+    @Test fun limpiarFiltrosYRestablecer() = runTest {
+        datos.lista.value = listOf(
+            datos.ticket(1, titulo = "Ticket 1", prioridad = "ALTA", categoriaId = 1),
+            datos.ticket(2, titulo = "Ticket 2", prioridad = "MEDIA", categoriaId = 2)
+        )
+        val vm = modelo(); runCurrent()
+
+        vm.buscar("Ticket 1")
+        vm.filtrarPrioridad(Prioridad.ALTA)
+        vm.filtrarCategoria(1)
+        runCurrent()
+        assertEquals(1, vm.uiState.value.tickets.size)
+
+        vm.limpiarFiltros()
+        runCurrent()
+        assertEquals(2, vm.uiState.value.tickets.size)
+        assertEquals("", vm.busqueda.value)
+        assertNull(vm.prioridad.value)
+        assertNull(vm.categoriaId.value)
     }
 
     @Test fun filtrosMantienenOrdenDePrioridadYFecha() = runTest {

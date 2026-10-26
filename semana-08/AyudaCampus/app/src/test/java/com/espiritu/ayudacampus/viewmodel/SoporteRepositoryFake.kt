@@ -60,6 +60,7 @@ internal class SoporteRepositoryFake {
                     "ALTA" -> 0; "MEDIA" -> 1; else -> 2
                 } }.thenByDescending { it.ticket.fecha })
             })
+            "observarCategorias" -> lectura(metodo.name, categorias)
             else -> error("Operación inesperada: ${metodo.name}")
         }
     } as AyudaRepository
