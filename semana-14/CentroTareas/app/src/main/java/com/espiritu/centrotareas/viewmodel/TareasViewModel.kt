@@ -6,16 +6,13 @@ import androidx.lifecycle.viewModelScope
 import com.espiritu.centrotareas.data.TareasRepository
 import com.espiritu.centrotareas.model.CargaUi
 import com.espiritu.centrotareas.model.PrimosUi
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
 
 class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
@@ -41,12 +38,9 @@ class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
                 _progreso.value = 0f
                 _mensaje.value = "Trabajando..."
                 Log.d("HILO", "Antes: ${Thread.currentThread().name}")
-                withContext(Dispatchers.Default) {
-                    Log.d("HILO", "Dentro: ${Thread.currentThread().name}")
-                    for (i in 1..100) {
-                        delay(40) // delay revisa la cancelación
-                        _progreso.value = i / 100f
-                    }
+                // Mejora IA: el trabajo está en el Repository; aquí solo se recolecta el progreso
+                repo.tareaConProgreso().collect { valor ->
+                    _progreso.value = valor
                 }
                 Log.d("HILO", "Despues: ${Thread.currentThread().name}")
                 _mensaje.value = "Terminó"
