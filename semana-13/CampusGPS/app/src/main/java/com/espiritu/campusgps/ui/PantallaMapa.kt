@@ -21,6 +21,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -47,10 +50,22 @@ fun PantallaMapa(vm: MapaViewModel) {
 
     val contexto = LocalContext.current
 
+    // Mejora IA: la vista recuerda si hay permiso para activar el punto azul del mapa
+    fun permisoConcedido(): Boolean =
+        ContextCompat.checkSelfPermission(
+            contexto, Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(
+                contexto, Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+
+    var tienePermiso by remember { mutableStateOf(permisoConcedido()) }
+
     // Android dibuja el cuadro de permiso; aquí solo recibimos la respuesta
     val lanzador = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { resultado ->
+        tienePermiso = resultado.values.any { it }
         // Si aceptó FINE o COARSE, buscamos; si no, avisamos al ViewModel
         if (resultado.values.any { it }) vm.buscar() else vm.permisoDenegado()
     }
@@ -63,6 +78,7 @@ fun PantallaMapa(vm: MapaViewModel) {
             contexto, Manifest.permission.ACCESS_COARSE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
 
+        tienePermiso = tieneFine || tieneCoarse
         if (tieneFine || tieneCoarse) {
             vm.buscar()
         } else {
@@ -112,6 +128,7 @@ fun PantallaMapa(vm: MapaViewModel) {
                     seleccionado = seleccionado,
                     masCercanoId = masCercano?.id,
                     radio = radio,
+                    tienePermiso = tienePermiso,
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
