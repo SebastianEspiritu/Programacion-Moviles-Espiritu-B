@@ -6,6 +6,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -15,6 +16,10 @@ import com.espiritu.centrotareas.viewmodel.TareasViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaTareas(viewModel: TareasViewModel) {
+    val mensaje by viewModel.mensaje.collectAsState()
+
+    // Prueba de vida: si deja de sumar, la pantalla está congelada
+    var toques by rememberSaveable { mutableIntStateOf(0) }
 
     Scaffold(
         topBar = {
@@ -37,7 +42,13 @@ fun PantallaTareas(viewModel: TareasViewModel) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             TarjetaTarea(titulo = "Tarea con progreso") {
-                // TODO Pasos 1 a 4: Tócame, Iniciar / Cancelar, barra de progreso y mensaje
+                Button(onClick = { toques++ }) {
+                    Text("Tócame: $toques")
+                }
+                Button(onClick = { viewModel.tareaLargaMala() }) {
+                    Text("Tarea larga (MAL)")
+                }
+                Text(mensaje)
             }
             TarjetaTarea(titulo = "Contar números primos") {
                 // TODO Paso 5: campo numérico, Contar / Cancelar y resultado
