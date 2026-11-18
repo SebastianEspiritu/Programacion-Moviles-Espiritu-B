@@ -1,11 +1,14 @@
 package com.espiritu.campusgps.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.espiritu.campusgps.data.LugaresRepository
 import com.espiritu.campusgps.data.UbicacionRepository
 import com.espiritu.campusgps.model.LugarConDistancia
+import com.espiritu.campusgps.model.Posicion
 import com.espiritu.campusgps.model.UbicacionUi
+import com.espiritu.campusgps.util.distanciaMetros
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,7 +36,7 @@ class MapaViewModel(
             ubicacionRepo.obtenerPosicion()
                 .onSuccess {
                     _estado.value = UbicacionUi.Lista(it)
-                    // TODO Paso 5: actualizarDistancias(it)
+                    actualizarDistancias(it)
                 }
                 .onFailure { _estado.value = UbicacionUi.Error(mensajeDe(it)) }
         }
@@ -41,6 +44,15 @@ class MapaViewModel(
 
     fun permisoDenegado() {
         _estado.value = UbicacionUi.Error("Sin permiso de ubicación no puedo mostrar dónde estás")
+    }
+
+    // Calcula la distancia a cada lugar, ordena de menor a mayor y publica la lista
+    private fun actualizarDistancias(pos: Posicion) {
+        val ordenados = lugaresRepo.obtenerLugares()
+            .map { LugarConDistancia(it, distanciaMetros(pos, it)) }
+            .sortedBy { it.metros }
+        _lugares.value = ordenados
+        ordenados.forEach { Log.d("CampusGPS", "${it.lugar.nombre}: ${it.metros} m") }
     }
 
     // TODO Paso 6: fun seleccionar(id: Int?)
