@@ -17,6 +17,7 @@ import com.espiritu.centrotareas.viewmodel.TareasViewModel
 @Composable
 fun PantallaTareas(viewModel: TareasViewModel) {
     val mensaje by viewModel.mensaje.collectAsState()
+    val progreso by viewModel.progreso.collectAsState()
 
     // Prueba de vida: si deja de sumar, la pantalla está congelada
     var toques by rememberSaveable { mutableIntStateOf(0) }
@@ -46,8 +47,13 @@ fun PantallaTareas(viewModel: TareasViewModel) {
                     Text("Tócame: $toques")
                 }
                 Button(onClick = { viewModel.tareaLarga() }) {
-                    Text("Tarea larga")
+                    Text("Iniciar")
                 }
+                LinearProgressIndicator(
+                    progress = { progreso },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text("${(progreso * 100).toInt()} %")
                 Text(mensaje)
             }
             TarjetaTarea(titulo = "Contar números primos") {
