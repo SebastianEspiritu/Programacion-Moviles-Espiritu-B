@@ -29,6 +29,7 @@ fun PantallaTareas(viewModel: TareasViewModel) {
     val corriendo by viewModel.corriendo.collectAsState()
     val primos by viewModel.primos.collectAsState()
     val carga by viewModel.carga.collectAsState()
+    val simularError by viewModel.simularError.collectAsState()
 
     // Prueba de vida: si deja de sumar, la pantalla está congelada
     var toques by rememberSaveable { mutableIntStateOf(0) }
@@ -131,6 +132,15 @@ fun PantallaTareas(viewModel: TareasViewModel) {
             }
             TarjetaTarea(titulo = "Dos cargas") {
                 val cargando = carga is CargaUi.Cargando
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Switch(
+                        checked = simularError,
+                        onCheckedChange = { viewModel.cambiarSimularError(it) },
+                        enabled = !cargando
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Simular error")
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedButton(
                         onClick = { viewModel.cargarUnaPorUna() },
@@ -158,7 +168,12 @@ fun PantallaTareas(viewModel: TareasViewModel) {
                         Text("Pedidos: ${estado.pedidos}")
                         Text("Tiempo: ${estado.milisegundos} ms")
                     }
-                    is CargaUi.Error -> Text(estado.mensaje, color = MaterialTheme.colorScheme.error)
+                    is CargaUi.Error -> {
+                        RecuadroError(estado.mensaje)
+                        OutlinedButton(onClick = { viewModel.cargarALaVez() }) {
+                            Text("Reintentar")
+                        }
+                    }
                 }
             }
         }
@@ -207,6 +222,22 @@ private fun RecuadroExito(contenido: @Composable ColumnScope.() -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(2.dp),
             content = contenido
+        )
+    }
+}
+
+@Composable
+private fun RecuadroError(mensaje: String) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.errorContainer,
+        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Text(
+            text = mensaje,
+            modifier = Modifier.padding(12.dp),
+            fontWeight = FontWeight.Medium
         )
     }
 }
