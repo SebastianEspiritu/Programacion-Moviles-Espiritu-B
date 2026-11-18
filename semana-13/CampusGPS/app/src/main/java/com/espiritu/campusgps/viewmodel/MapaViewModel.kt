@@ -55,7 +55,10 @@ class MapaViewModel(
         ordenados.forEach { Log.d("CampusGPS", "${it.lugar.nombre}: ${it.metros} m") }
     }
 
-    // TODO Paso 6: fun seleccionar(id: Int?)
+    // El usuario tocó una tarjeta (o null para quitar la selección)
+    fun seleccionar(id: Int?) {
+        _seleccionado.value = id
+    }
     // TODO Paso 7: val masCercano: StateFlow<Lugar?>
 
     private fun mensajeDe(e: Throwable): String = when (e) {

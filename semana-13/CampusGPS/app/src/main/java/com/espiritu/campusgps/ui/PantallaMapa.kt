@@ -106,16 +106,26 @@ fun PantallaMapa(vm: MapaViewModel) {
             when (val e = estado) {
                 UbicacionUi.Inicial -> Text("Pulsa el botón para empezar")
                 UbicacionUi.Buscando -> Text("Buscando tu ubicación...")
-                is UbicacionUi.Lista -> {
-                    Text("Latitud: ${e.posicion.latitud}")
-                    Text("Longitud: ${e.posicion.longitud}")
-                }
+                is UbicacionUi.Lista -> Text(
+                    "Latitud: ${e.posicion.latitud}   Longitud: ${e.posicion.longitud}",
+                    style = MaterialTheme.typography.bodySmall
+                )
                 is UbicacionUi.Error -> Text(
                     e.mensaje,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
+
+            // Lista de lugares debajo del mapa, con altura fija
+            ListaLugares(
+                lugares = lugares,
+                seleccionado = seleccionado,
+                onClick = { id -> vm.seleccionar(id) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp)
+            )
 
             Spacer(Modifier.height(16.dp))
         }
