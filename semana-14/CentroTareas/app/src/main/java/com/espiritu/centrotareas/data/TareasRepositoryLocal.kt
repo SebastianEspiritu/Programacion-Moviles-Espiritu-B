@@ -34,12 +34,18 @@ class TareasRepositoryLocal : TareasRepository {
     }.flowOn(Dispatchers.Default)
 
     // Paso 5: cálculo pesado en Dispatchers.Default, cancelable a mitad del ciclo
-    override suspend fun contarPrimos(hasta: Int): Int = withContext(Dispatchers.Default) {
+    override suspend fun contarPrimos(
+        hasta: Int,
+        alAvanzar: (Float) -> Unit
+    ): Int = withContext(Dispatchers.Default) {
         var cantidad = 0
+        val cadaUnoPorCiento = maxOf(1, hasta / 100) // avisa 100 veces, no en cada número
         for (n in 2..hasta) {
             ensureActive()
             if (esPrimo(n)) cantidad++
+            if (n % cadaUnoPorCiento == 0) alAvanzar(n.toFloat() / hasta)
         }
+        alAvanzar(1f)
         cantidad
     }
 

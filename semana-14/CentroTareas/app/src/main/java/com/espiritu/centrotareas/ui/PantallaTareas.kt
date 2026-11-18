@@ -28,6 +28,7 @@ fun PantallaTareas(viewModel: TareasViewModel) {
     val progreso by viewModel.progreso.collectAsState()
     val corriendo by viewModel.corriendo.collectAsState()
     val primos by viewModel.primos.collectAsState()
+    val progresoPrimos by viewModel.progresoPrimos.collectAsState()
     val carga by viewModel.carga.collectAsState()
     val simularError by viewModel.simularError.collectAsState()
     val limiteTiempo by viewModel.limiteTiempo.collectAsState()
@@ -117,8 +118,11 @@ fun PantallaTareas(viewModel: TareasViewModel) {
                 when (val estado = primos) {
                     PrimosUi.Inicial -> Unit
                     PrimosUi.Calculando -> {
-                        CircularProgressIndicator()
-                        Text("Calculando...")
+                        LinearProgressIndicator(
+                            progress = { progresoPrimos },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Text("Calculando... ${(progresoPrimos * 100).toInt()} %")
                     }
                     is PrimosUi.Listo -> RecuadroExito {
                         Text(
