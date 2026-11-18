@@ -18,6 +18,7 @@ import com.espiritu.centrotareas.viewmodel.TareasViewModel
 fun PantallaTareas(viewModel: TareasViewModel) {
     val mensaje by viewModel.mensaje.collectAsState()
     val progreso by viewModel.progreso.collectAsState()
+    val corriendo by viewModel.corriendo.collectAsState()
 
     // Prueba de vida: si deja de sumar, la pantalla está congelada
     var toques by rememberSaveable { mutableIntStateOf(0) }
@@ -46,8 +47,19 @@ fun PantallaTareas(viewModel: TareasViewModel) {
                 Button(onClick = { toques++ }) {
                     Text("Tócame: $toques")
                 }
-                Button(onClick = { viewModel.tareaLarga() }) {
-                    Text("Iniciar")
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Button(
+                        onClick = { viewModel.tareaLarga() },
+                        enabled = !corriendo
+                    ) {
+                        Text("Iniciar")
+                    }
+                    OutlinedButton(
+                        onClick = { viewModel.cancelar() },
+                        enabled = corriendo
+                    ) {
+                        Text("Cancelar")
+                    }
                 }
                 LinearProgressIndicator(
                     progress = { progreso },
