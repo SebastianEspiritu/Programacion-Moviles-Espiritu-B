@@ -4,10 +4,10 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -32,6 +32,8 @@ import com.espiritu.campusgps.viewmodel.MapaViewModel
 @Composable
 fun PantallaMapa(vm: MapaViewModel) {
     val estado by vm.estado.collectAsState()
+    val lugares by vm.lugares.collectAsState()
+    val seleccionado by vm.seleccionado.collectAsState()
 
     val contexto = LocalContext.current
 
@@ -77,12 +79,20 @@ fun PantallaMapa(vm: MapaViewModel) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
+                .padding(padding),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // TODO Paso 3: MapaUbicacion(...) con Modifier.weight(1f)
+            // El mapa ocupa todo el espacio libre de arriba
+            MapaUbicacion(
+                estado = estado,
+                lugares = lugares,
+                seleccionado = seleccionado,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            )
+
+            Spacer(Modifier.height(12.dp))
 
             Button(
                 onClick = { alPulsar() },
@@ -91,7 +101,7 @@ fun PantallaMapa(vm: MapaViewModel) {
                 Text("Obtener mi ubicación")
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
 
             when (val e = estado) {
                 UbicacionUi.Inicial -> Text("Pulsa el botón para empezar")
@@ -100,8 +110,14 @@ fun PantallaMapa(vm: MapaViewModel) {
                     Text("Latitud: ${e.posicion.latitud}")
                     Text("Longitud: ${e.posicion.longitud}")
                 }
-                is UbicacionUi.Error -> Text(e.mensaje, color = MaterialTheme.colorScheme.error)
+                is UbicacionUi.Error -> Text(
+                    e.mensaje,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
             }
+
+            Spacer(Modifier.height(16.dp))
         }
     }
 }
