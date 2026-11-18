@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -31,7 +32,17 @@ class MapaViewModel(
     private val _lugares = MutableStateFlow(
         lugaresRepo.obtenerLugares().map { LugarConDistancia(it, null) }
     )
-    val lugares: StateFlow<List<LugarConDistancia>> = _lugares.asStateFlow()
+
+    // Mejora IA: filtro por categoría (null = todas)
+    val categorias: List<String> = lugaresRepo.obtenerLugares().map { it.categoria }.distinct()
+
+    private val _categoria = MutableStateFlow<String?>(null)
+    val categoria: StateFlow<String?> = _categoria.asStateFlow()
+
+    // La pantalla recibe solo los lugares de la categoría elegida (ya ordenados por distancia)
+    val lugares: StateFlow<List<LugarConDistancia>> = combine(_lugares, _categoria) { lista, cat ->
+        if (cat == null) lista else lista.filter { it.lugar.categoria == cat }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, _lugares.value)
 
     private val _seleccionado = MutableStateFlow<Int?>(null)
     val seleccionado: StateFlow<Int?> = _seleccionado.asStateFlow()
@@ -75,6 +86,16 @@ class MapaViewModel(
             .sortedBy { it.metros }
         _lugares.value = ordenados
         ordenados.forEach { Log.d("CampusGPS", "${it.lugar.nombre}: ${it.metros} m") }
+    }
+
+    // Cambia la categoría; si el lugar seleccionado queda oculto, se quita la selección
+    fun filtrar(categoria: String?) {
+        _categoria.value = categoria
+        val seleccionadoVisible = _lugares.value.any {
+            it.lugar.id == _seleccionado.value &&
+                (categoria == null || it.lugar.categoria == categoria)
+        }
+        if (!seleccionadoVisible) _seleccionado.value = null
     }
 
     // El usuario tocó una tarjeta (o null para quitar la selección)

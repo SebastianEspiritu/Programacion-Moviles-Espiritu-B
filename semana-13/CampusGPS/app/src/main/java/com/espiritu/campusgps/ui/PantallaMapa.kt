@@ -41,6 +41,7 @@ fun PantallaMapa(vm: MapaViewModel) {
     val lugares by vm.lugares.collectAsState()
     val seleccionado by vm.seleccionado.collectAsState()
     val masCercano by vm.masCercano.collectAsState()
+    val categoria by vm.categoria.collectAsState()
 
     val contexto = LocalContext.current
 
@@ -154,6 +155,13 @@ fun PantallaMapa(vm: MapaViewModel) {
                         }
                     )
                 }
+
+                // Mejora IA: chips para filtrar por categoría
+                FiltroCategorias(
+                    categorias = vm.categorias,
+                    seleccionada = categoria,
+                    onSeleccionar = { vm.filtrar(it) }
+                )
 
                 // Lista de lugares debajo del mapa, con altura fija
                 ListaLugares(
