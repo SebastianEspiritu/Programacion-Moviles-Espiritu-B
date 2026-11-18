@@ -34,7 +34,8 @@ fun ListaLugares(
     lugares: List<LugarConDistancia>,
     seleccionado: Int?,
     onClick: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    masCercanoId: Int? = null
 ) {
     LazyColumn(
         modifier = modifier,
@@ -45,6 +46,7 @@ fun ListaLugares(
             TarjetaLugar(
                 item = item,
                 esSeleccionado = item.lugar.id == seleccionado,
+                esMasCercano = item.lugar.id == masCercanoId,
                 onClick = { onClick(item.lugar.id) }
             )
         }
@@ -55,6 +57,7 @@ fun ListaLugares(
 private fun TarjetaLugar(
     item: LugarConDistancia,
     esSeleccionado: Boolean,
+    esMasCercano: Boolean,
     onClick: () -> Unit
 ) {
     Card(
@@ -73,11 +76,14 @@ private fun TarjetaLugar(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Punto de color del lugar (azul, como su marcador)
+            // Punto del mismo color que su marcador: verde el más cercano, azul los demás
             Box(
                 modifier = Modifier
                     .size(8.dp)
-                    .background(Color(0xFF2F80ED), CircleShape)
+                    .background(
+                        if (esMasCercano) Color(0xFF2E9E48) else Color(0xFF2F80ED),
+                        CircleShape
+                    )
             )
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
