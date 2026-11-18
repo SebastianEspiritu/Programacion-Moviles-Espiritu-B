@@ -30,6 +30,7 @@ fun PantallaTareas(viewModel: TareasViewModel) {
     val primos by viewModel.primos.collectAsState()
     val carga by viewModel.carga.collectAsState()
     val simularError by viewModel.simularError.collectAsState()
+    val limiteTiempo by viewModel.limiteTiempo.collectAsState()
 
     // Prueba de vida: si deja de sumar, la pantalla está congelada
     var toques by rememberSaveable { mutableIntStateOf(0) }
@@ -140,6 +141,15 @@ fun PantallaTareas(viewModel: TareasViewModel) {
                     )
                     Spacer(Modifier.width(8.dp))
                     Text("Simular error")
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Switch(
+                        checked = limiteTiempo,
+                        onCheckedChange = { viewModel.cambiarLimiteTiempo(it) },
+                        enabled = !cargando
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Tiempo máximo 2 s")
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedButton(

@@ -12,7 +12,9 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import kotlin.coroutines.cancellation.CancellationException
 
 class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
@@ -92,6 +94,14 @@ class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
         _simularError.value = valor
     }
 
+    // Mejora IA: tiempo máximo de 2 s para las cargas (se activa con un interruptor)
+    private val _limiteTiempo = MutableStateFlow(false)
+    val limiteTiempo: StateFlow<Boolean> = _limiteTiempo.asStateFlow()
+
+    fun cambiarLimiteTiempo(valor: Boolean) {
+        _limiteTiempo.value = valor
+    }
+
     // Paso 6: primero el perfil (2 s) y después los pedidos (3 s) -> ≈ 5 s
     fun cargarUnaPorUna() {
         ejecutarCarga("Una por una") {
@@ -122,14 +132,25 @@ class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
             _carga.value = CargaUi.Cargando
             val inicio = System.currentTimeMillis()
             try {
-                val (perfil, pedidos) = bloque()
+                val (perfil, pedidos) = if (_limiteTiempo.value) {
+                    withTimeout(LIMITE_MS) { bloque() }
+                } else {
+                    bloque()
+                }
                 val ms = System.currentTimeMillis() - inicio
                 _carga.value = CargaUi.Exito(modo, perfil, pedidos.size, ms)
+            } catch (e: TimeoutCancellationException) {
+                // Va antes que CancellationException porque es una subclase suya
+                _carga.value = CargaUi.Error("Tardó demasiado")
             } catch (e: CancellationException) {
                 throw e // primero deja pasar la cancelación
             } catch (e: Exception) {
                 _carga.value = CargaUi.Error("No se pudo cargar: " + e.message)
             }
         }
+    }
+
+    private companion object {
+        const val LIMITE_MS = 2000L
     }
 }
