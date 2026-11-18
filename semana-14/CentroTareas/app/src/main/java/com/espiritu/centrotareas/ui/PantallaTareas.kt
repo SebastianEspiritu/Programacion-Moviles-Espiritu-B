@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.espiritu.centrotareas.model.PrimosUi
+import com.espiritu.centrotareas.model.CargaUi
 import com.espiritu.centrotareas.ui.theme.ExitoFondo
 import com.espiritu.centrotareas.ui.theme.ExitoTexto
 import com.espiritu.centrotareas.ui.theme.ExitoTitulo
@@ -27,10 +28,11 @@ fun PantallaTareas(viewModel: TareasViewModel) {
     val progreso by viewModel.progreso.collectAsState()
     val corriendo by viewModel.corriendo.collectAsState()
     val primos by viewModel.primos.collectAsState()
+    val carga by viewModel.carga.collectAsState()
 
     // Prueba de vida: si deja de sumar, la pantalla está congelada
     var toques by rememberSaveable { mutableIntStateOf(0) }
-    var textoNumero by rememberSaveable { mutableStateOf("500000") }
+    var textoNumero by rememberSaveable { mutableStateOf("5000000") }
     var ultimoNumero by rememberSaveable { mutableIntStateOf(0) }
 
     Scaffold(
@@ -128,7 +130,36 @@ fun PantallaTareas(viewModel: TareasViewModel) {
                 }
             }
             TarjetaTarea(titulo = "Dos cargas") {
-                // TODO Pasos 6 y 7: Una por una / A la vez, Simular error, resultado y Reintentar
+                val cargando = carga is CargaUi.Cargando
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedButton(
+                        onClick = { viewModel.cargarUnaPorUna() },
+                        enabled = !cargando
+                    ) {
+                        Text("Una por una")
+                    }
+                    Button(
+                        onClick = { viewModel.cargarALaVez() },
+                        enabled = !cargando
+                    ) {
+                        Text("A la vez")
+                    }
+                }
+                when (val estado = carga) {
+                    CargaUi.Inicial -> Unit
+                    CargaUi.Cargando -> CircularProgressIndicator()
+                    is CargaUi.Exito -> RecuadroExito {
+                        Text(
+                            "Modo: ${estado.modo}",
+                            color = ExitoTitulo,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text("Perfil: ${estado.perfil}")
+                        Text("Pedidos: ${estado.pedidos}")
+                        Text("Tiempo: ${estado.milisegundos} ms")
+                    }
+                    is CargaUi.Error -> Text(estado.mensaje, color = MaterialTheme.colorScheme.error)
+                }
             }
         }
     }
