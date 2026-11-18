@@ -89,73 +89,83 @@ fun PantallaMapa(vm: MapaViewModel) {
                 .padding(padding),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // El mapa ocupa todo el espacio libre de arriba
-            MapaUbicacion(
-                estado = estado,
-                lugares = lugares,
-                seleccionado = seleccionado,
-                masCercanoId = masCercano?.id,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-            )
-
-            Spacer(Modifier.height(12.dp))
-
-            Button(
-                onClick = { alPulsar() },
-                enabled = estado !is UbicacionUi.Buscando
-            ) {
-                Text("Obtener mi ubicación")
-            }
-
-            Spacer(Modifier.height(8.dp))
-
-            when (val e = estado) {
-                UbicacionUi.Inicial -> Text("Pulsa el botón para empezar")
-                UbicacionUi.Buscando -> Text("Buscando tu ubicación...")
-                is UbicacionUi.Lista -> Text(
-                    "Latitud: ${e.posicion.latitud}   Longitud: ${e.posicion.longitud}",
-                    style = MaterialTheme.typography.bodySmall
+            val error = estado as? UbicacionUi.Error
+            if (error != null) {
+                // Pantalla de error: botón principal, recuadro con el mensaje y su acción
+                Spacer(Modifier.height(24.dp))
+                Button(onClick = { alPulsar() }) {
+                    Text("Obtener mi ubicación")
+                }
+                Spacer(Modifier.height(16.dp))
+                MensajeError(
+                    error = error,
+                    onReintentar = { alPulsar() }
                 )
-                is UbicacionUi.Error -> Text(
-                    e.mensaje,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+            } else {
+                // El mapa ocupa todo el espacio libre de arriba
+                MapaUbicacion(
+                    estado = estado,
+                    lugares = lugares,
+                    seleccionado = seleccionado,
+                    masCercanoId = masCercano?.id,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                Button(
+                    onClick = { alPulsar() },
+                    enabled = estado !is UbicacionUi.Buscando
+                ) {
+                    Text("Obtener mi ubicación")
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                when (val e = estado) {
+                    UbicacionUi.Inicial -> Text("Pulsa el botón para empezar")
+                    UbicacionUi.Buscando -> Text("Buscando tu ubicación...")
+                    is UbicacionUi.Lista -> Text(
+                        "Latitud: ${e.posicion.latitud}   Longitud: ${e.posicion.longitud}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    is UbicacionUi.Error -> Unit
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                // Botón secundario: lleva la cámara al lugar más cercano
+                OutlinedButton(
+                    onClick = { masCercano?.let { vm.seleccionar(it.id) } },
+                    enabled = masCercano != null
+                ) {
+                    Text("Ir al más cercano")
+                }
+
+                masCercano?.let { cercano ->
+                    val metros = lugares.firstOrNull { it.lugar.id == cercano.id }?.metros
+                    Text(
+                        buildAnnotatedString {
+                            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("Más cercano: ") }
+                            append(cercano.nombre)
+                            if (metros != null) append(" (${formatearDistancia(metros)})")
+                        }
+                    )
+                }
+
+                // Lista de lugares debajo del mapa, con altura fija
+                ListaLugares(
+                    lugares = lugares,
+                    seleccionado = seleccionado,
+                    onClick = { id -> vm.seleccionar(id) },
+                    masCercanoId = masCercano?.id,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(220.dp)
                 )
             }
-
-            Spacer(Modifier.height(8.dp))
-
-            // Botón secundario: lleva la cámara al lugar más cercano
-            OutlinedButton(
-                onClick = { masCercano?.let { vm.seleccionar(it.id) } },
-                enabled = masCercano != null
-            ) {
-                Text("Ir al más cercano")
-            }
-
-            masCercano?.let { cercano ->
-                val metros = lugares.firstOrNull { it.lugar.id == cercano.id }?.metros
-                Text(
-                    buildAnnotatedString {
-                        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("Más cercano: ") }
-                        append(cercano.nombre)
-                        if (metros != null) append(" (${formatearDistancia(metros)})")
-                    }
-                )
-            }
-
-            // Lista de lugares debajo del mapa, con altura fija
-            ListaLugares(
-                lugares = lugares,
-                seleccionado = seleccionado,
-                onClick = { id -> vm.seleccionar(id) },
-                masCercanoId = masCercano?.id,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(220.dp)
-            )
 
             Spacer(Modifier.height(16.dp))
         }
