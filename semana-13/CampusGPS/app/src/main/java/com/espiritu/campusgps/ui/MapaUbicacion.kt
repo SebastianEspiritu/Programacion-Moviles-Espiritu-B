@@ -4,12 +4,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import com.espiritu.campusgps.model.LugarConDistancia
 import com.espiritu.campusgps.model.UbicacionUi
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.Circle
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.rememberCameraPositionState
@@ -21,6 +23,7 @@ fun MapaUbicacion(
     lugares: List<LugarConDistancia>,
     seleccionado: Int?,
     masCercanoId: Int?,
+    radio: Int? = null,
     modifier: Modifier = Modifier
 ) {
     val camara = rememberCameraPositionState {
@@ -54,6 +57,16 @@ fun MapaUbicacion(
                 ),
                 title = "Estás aquí"
             )
+            // Mejora IA: círculo del radio de cercanía alrededor de mi posición
+            if (radio != null) {
+                Circle(
+                    center = LatLng(estado.posicion.latitud, estado.posicion.longitud),
+                    radius = radio.toDouble(),
+                    fillColor = Color(0x332F80ED),
+                    strokeColor = Color(0xFF2F80ED),
+                    strokeWidth = 3f
+                )
+            }
         }
         // Un marcador por cada lugar: verde el más cercano, azul los demás
         lugares.forEach { item ->

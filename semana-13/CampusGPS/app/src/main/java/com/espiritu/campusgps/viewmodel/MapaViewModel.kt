@@ -88,6 +88,22 @@ class MapaViewModel(
         ordenados.forEach { Log.d("CampusGPS", "${it.lugar.nombre}: ${it.metros} m") }
     }
 
+    // Mejora IA: radio de cercanía en metros (null = sin radio)
+    val radiosDisponibles: List<Int> = listOf(100, 200, 500)
+
+    private val _radio = MutableStateFlow<Int?>(null)
+    val radio: StateFlow<Int?> = _radio.asStateFlow()
+
+    // Ids de los lugares cuya distancia está dentro del radio elegido
+    val dentroDelRadio: StateFlow<Set<Int>> = combine(lugares, _radio) { lista, r ->
+        if (r == null) emptySet()
+        else lista.filter { it.metros != null && it.metros <= r }.map { it.lugar.id }.toSet()
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+
+    fun cambiarRadio(metros: Int?) {
+        _radio.value = metros
+    }
+
     // Cambia la categoría; si el lugar seleccionado queda oculto, se quita la selección
     fun filtrar(categoria: String?) {
         _categoria.value = categoria
