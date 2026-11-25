@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.espiritu.avisoscampus.data.AvisosRepository
 import com.espiritu.avisoscampus.model.Aviso
+import com.espiritu.avisoscampus.model.Canal
+import com.espiritu.avisoscampus.model.EventoAviso
 import com.espiritu.avisoscampus.model.Origen
 import com.espiritu.avisoscampus.model.PermisoUi
 import kotlinx.coroutines.Job
@@ -22,8 +24,9 @@ class AvisosViewModel(private val repo: AvisosRepository) : ViewModel() {
 
     // Evento de una sola vez: "muestra esta notificación".
     // El ViewModel NO tiene Context: lo recibe la pantalla.
-    private val _eventos = MutableSharedFlow<Aviso>()
-    val eventos: SharedFlow<Aviso> = _eventos.asSharedFlow()
+    // Lleva también el canal: el ViewModel decide si el aviso es urgente
+    private val _eventos = MutableSharedFlow<EventoAviso>()
+    val eventos: SharedFlow<EventoAviso> = _eventos.asSharedFlow()
 
     private val _permiso = MutableStateFlow<PermisoUi>(PermisoUi.SinPedir)
     val permiso: StateFlow<PermisoUi> = _permiso.asStateFlow()
@@ -49,7 +52,7 @@ class AvisosViewModel(private val repo: AvisosRepository) : ViewModel() {
     fun avisarAhora() {
         viewModelScope.launch {
             val aviso = repo.registrar("Tarea lista", "Tu entrega fue registrada", Origen.BOTON)
-            _eventos.emit(aviso)
+            _eventos.emit(EventoAviso(aviso))
         }
     }
 
@@ -66,7 +69,7 @@ class AvisosViewModel(private val repo: AvisosRepository) : ViewModel() {
                     "Revisa tu laboratorio pendiente",
                     Origen.RECORDATORIO
                 )
-                _eventos.emit(aviso)
+                _eventos.emit(EventoAviso(aviso, Canal.URGENTES))   // sale emergente
             } finally {
                 _faltan.value = null                    // termine bien o cancelado
             }
@@ -85,7 +88,7 @@ class AvisosViewModel(private val repo: AvisosRepository) : ViewModel() {
         viewModelScope.launch {
             val texto = if (activo) "Activado" else "Desactivado"
             val aviso = repo.registrar("Modo avión", texto, Origen.MODO_AVION)
-            _eventos.emit(aviso)
+            _eventos.emit(EventoAviso(aviso))
         }
     }
 

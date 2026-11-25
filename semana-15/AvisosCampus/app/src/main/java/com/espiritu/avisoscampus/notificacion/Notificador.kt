@@ -15,22 +15,32 @@ import androidx.core.content.ContextCompat
 import com.espiritu.avisoscampus.MainActivity
 import com.espiritu.avisoscampus.R
 import com.espiritu.avisoscampus.model.Aviso
+import com.espiritu.avisoscampus.model.Canal
 
 object Notificador {
     const val CANAL = "avisos"
+    const val CANAL_URGENTE = "urgentes"
 
     fun crearCanal(context: Context) {
         // Los canales existen desde Android 8 (API 26)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val canal = NotificationChannel(
+            val avisos = NotificationChannel(
                 CANAL,
                 "Avisos",
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
                 description = "Notificaciones de la app"
             }
+            // IMPORTANCE_HIGH: la notificación aparece emergente (heads-up) y suena
+            val urgentes = NotificationChannel(
+                CANAL_URGENTE,
+                "Urgentes",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Recordatorios que no puedes dejar pasar"
+            }
             val manager = context.getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(canal)
+            manager.createNotificationChannels(listOf(avisos, urgentes))
         }
     }
 
@@ -44,7 +54,7 @@ object Notificador {
     }
 
     @SuppressLint("MissingPermission") // el permiso ya se revisa con tienePermiso
-    fun mostrar(context: Context, aviso: Aviso): Boolean {
+    fun mostrar(context: Context, aviso: Aviso, canal: Canal = Canal.AVISOS): Boolean {
         // 1. Sin permiso no se muestra nada, pero tampoco se lanza un error
         if (!tienePermiso(context)) return false
 
@@ -57,12 +67,18 @@ object Notificador {
             PendingIntent.FLAG_IMMUTABLE
         )
 
+        // El ViewModel eligió el canal; aquí solo se traduce a su id y prioridad
+        val urgente = canal == Canal.URGENTES
+        val idCanal = if (urgente) CANAL_URGENTE else CANAL
+        val prioridad =
+            if (urgente) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT
+
         // 2. Construir la notificación
-        val notificacion = NotificationCompat.Builder(context, CANAL)
+        val notificacion = NotificationCompat.Builder(context, idCanal)
             .setSmallIcon(R.drawable.ic_notificacion)
             .setContentTitle(aviso.titulo)
             .setContentText(aviso.texto)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setPriority(prioridad)            // para Android 7 (sin canales)
             .setContentIntent(pendiente)
             .setAutoCancel(true)
             .build()

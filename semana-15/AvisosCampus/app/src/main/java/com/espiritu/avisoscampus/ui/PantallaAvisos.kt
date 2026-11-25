@@ -45,8 +45,8 @@ fun PantallaAvisos(vm: AvisosViewModel) {
 
     // El ViewModel decide QUÉ avisar; la pantalla (que sí tiene Context) lo muestra
     LaunchedEffect(Unit) {
-        vm.eventos.collect { aviso ->
-            val mostrado = Notificador.mostrar(contexto, aviso)
+        vm.eventos.collect { evento ->
+            val mostrado = Notificador.mostrar(contexto, evento.aviso, evento.canal)
             if (!mostrado) vm.noSePudoMostrar()
         }
     }
