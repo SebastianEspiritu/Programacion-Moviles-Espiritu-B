@@ -20,6 +20,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,7 +45,11 @@ import com.espiritu.murocampus.viewmodel.PostsViewModel
 import com.espiritu.murocampus.viewmodel.UiState
 
 @Composable
-fun PantallaDetalle(vm: PostsViewModel, id: Int) {
+fun PantallaDetalle(
+    vm: PostsViewModel,
+    id: Int,
+    onEditar: () -> Unit = {}
+) {
     val estado by vm.detalle.collectAsStateWithLifecycle()
     val borrado by vm.borrado.collectAsStateWithLifecycle()
     var confirmarBorrado by remember { mutableStateOf(false) }
@@ -66,6 +71,7 @@ fun PantallaDetalle(vm: PostsViewModel, id: Int) {
             item {
                 AccionesDetalle(
                     borrando = borrado is UiState.Cargando,
+                    onEditar = onEditar,
                     onEliminar = { confirmarBorrado = true }
                 )
             }
@@ -108,13 +114,16 @@ fun PantallaDetalle(vm: PostsViewModel, id: Int) {
 
 /** Botones del detalle (Fase 2). */
 @Composable
-private fun AccionesDetalle(borrando: Boolean, onEliminar: () -> Unit) {
+private fun AccionesDetalle(borrando: Boolean, onEditar: () -> Unit, onEliminar: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (borrando) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
+        OutlinedButton(onClick = onEditar, enabled = !borrando) {
+            Text("Editar título", fontWeight = FontWeight.Bold)
+        }
         Button(
             onClick = onEliminar,
             enabled = !borrando,

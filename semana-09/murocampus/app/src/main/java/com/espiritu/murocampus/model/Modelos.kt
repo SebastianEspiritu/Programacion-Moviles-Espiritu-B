@@ -29,6 +29,12 @@ data class Comentario(
     val body: String
 )
 
+// Fase 2: lo que enviamos en el PATCH (solo el campo que cambia)
+@Serializable
+data class CambioTitulo(
+    val title: String
+)
+
 // Lo que enviamos en el POST: no lleva id (lo asigna el servidor)
 @Serializable
 data class NuevoPost(

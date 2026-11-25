@@ -1,6 +1,7 @@
 package com.espiritu.murocampus.data
 
 import com.espiritu.murocampus.data.remote.PostApi
+import com.espiritu.murocampus.model.CambioTitulo
 import com.espiritu.murocampus.model.Comentario
 import com.espiritu.murocampus.model.NuevoPost
 import com.espiritu.murocampus.model.Post
@@ -14,6 +15,7 @@ interface PostRepository {
     suspend fun porUsuario(userId: Int): Result<List<Post>>
     suspend fun crear(nuevo: NuevoPost): Result<Post>
     suspend fun borrar(id: Int): Result<Unit>
+    suspend fun editarTitulo(id: Int, titulo: String): Result<Post>
 }
 
 class PostRepositoryRemote(private val api: PostApi) : PostRepository {
@@ -35,6 +37,9 @@ class PostRepositoryRemote(private val api: PostApi) : PostRepository {
         // Con Response<Unit> Retrofit no lanza excepción si el código es 4xx/5xx: lo revisamos aquí
         if (!respuesta.isSuccessful) throw HttpException(respuesta)
     }
+
+    override suspend fun editarTitulo(id: Int, titulo: String): Result<Post> =
+        llamar { api.editarTitulo(id, CambioTitulo(titulo)) }
 
     // Un solo try/catch para todas las llamadas: ninguna excepción sale del Repository
     private suspend fun <T> llamar(bloque: suspend () -> T): Result<T> =

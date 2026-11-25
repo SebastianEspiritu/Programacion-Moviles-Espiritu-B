@@ -32,6 +32,7 @@ import com.espiritu.murocampus.data.remote.RetrofitClient
 import com.espiritu.murocampus.ui.BarraMuroCampus
 import com.espiritu.murocampus.ui.PantallaCrear
 import com.espiritu.murocampus.ui.PantallaDetalle
+import com.espiritu.murocampus.ui.PantallaEditar
 import com.espiritu.murocampus.ui.PantallaLista
 import com.espiritu.murocampus.ui.theme.MuroCampusTheme
 import com.espiritu.murocampus.viewmodel.PostsViewModel
@@ -56,6 +57,8 @@ class MainActivity : ComponentActivity() {
                 var idSeleccionado by rememberSaveable { mutableStateOf<Int?>(null) }
                 // true = se ve la pantalla Crear
                 var creando by rememberSaveable { mutableStateOf(false) }
+                // Fase 2: true = se ve la pantalla Editar (de la publicación seleccionada)
+                var editando by rememberSaveable { mutableStateOf(false) }
 
                 val enLista = idSeleccionado == null && !creando
 
@@ -102,10 +105,23 @@ class MainActivity : ComponentActivity() {
                                 PantallaCrear(vm)
                             }
 
+                            editando && id != null -> {
+                                // El botón Atrás vuelve al detalle, que ya muestra el título nuevo
+                                BackHandler { editando = false }
+                                PantallaEditar(vm, id)
+                            }
+
                             id != null -> {
                                 // El botón Atrás del sistema vuelve a la lista (sin recargarla)
                                 BackHandler { idSeleccionado = null }
-                                PantallaDetalle(vm, id)
+                                PantallaDetalle(
+                                    vm = vm,
+                                    id = id,
+                                    onEditar = {
+                                        vm.nuevaEdicion()
+                                        editando = true
+                                    }
+                                )
                             }
 
                             else -> PantallaLista(

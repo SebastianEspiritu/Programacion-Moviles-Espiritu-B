@@ -62,6 +62,11 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
     private val _borrado = MutableStateFlow<UiState<Int>?>(null)
     val borrado: StateFlow<UiState<Int>?> = _borrado.asStateFlow()
 
+    // ---------- Editar (Fase 2) ----------
+    // null = aún no se envió; Exito lleva la publicación que respondió el servidor
+    private val _editado = MutableStateFlow<UiState<Post>?>(null)
+    val editado: StateFlow<UiState<Post>?> = _editado.asStateFlow()
+
     init { cargar() }
 
     /** Carga la lista respetando el filtro actual (también lo usa Reintentar). */
@@ -157,6 +162,35 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
         val estado = _lista.value
         if (estado is UiState.Exito) {
             _lista.value = UiState.Exito(estado.datos.filterNot { it.id == id })
+        }
+    }
+
+    /** Al entrar a la pantalla Editar, se borra el mensaje de la edición anterior. */
+    fun nuevaEdicion() {
+        _editado.value = null
+    }
+
+    fun editarTitulo(id: Int, titulo: String) {
+        viewModelScope.launch {
+            _editado.value = UiState.Cargando
+            repo.editarTitulo(id, titulo)
+                .onSuccess { post ->
+                    actualizarPost(post)
+                    _editado.value = UiState.Exito(post)
+                }
+                .onFailure { _editado.value = UiState.Error(mensajeDe(it)) }
+        }
+    }
+
+    /** Reemplaza la publicación editada en la lista y en el detalle (JSONPlaceholder no la guarda). */
+    private fun actualizarPost(post: Post) {
+        val lista = _lista.value
+        if (lista is UiState.Exito) {
+            _lista.value = UiState.Exito(lista.datos.map { if (it.id == post.id) post else it })
+        }
+        val detalle = _detalle.value
+        if (detalle is UiState.Exito && detalle.datos.post.id == post.id) {
+            _detalle.value = UiState.Exito(detalle.datos.copy(post = post))
         }
     }
 }
