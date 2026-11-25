@@ -78,6 +78,11 @@ object Notificador {
             .setSmallIcon(R.drawable.ic_notificacion)
             .setContentTitle(aviso.titulo)
             .setContentText(aviso.texto)
+            // Al expandir la notificación se ve el texto completo, con su origen y hora
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText(textoCompleto(aviso))
+            )
             .setPriority(prioridad)            // para Android 7 (sin canales)
             .setContentIntent(pendiente)
             .setAutoCancel(true)
@@ -87,4 +92,8 @@ object Notificador {
         NotificationManagerCompat.from(context).notify(aviso.id, notificacion)
         return true
     }
+
+    // Texto que se ve al expandir: el mensaje y, debajo, de dónde vino y a qué hora
+    private fun textoCompleto(aviso: Aviso): String =
+        "${aviso.texto}\nOrigen: ${aviso.origen.texto} · Hora: ${aviso.hora}"
 }
