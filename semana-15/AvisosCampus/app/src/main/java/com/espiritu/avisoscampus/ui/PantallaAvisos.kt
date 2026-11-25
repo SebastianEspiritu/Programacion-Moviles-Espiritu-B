@@ -37,6 +37,7 @@ fun PantallaAvisos(vm: AvisosViewModel) {
     val permiso by vm.permiso.collectAsState()
     val faltan by vm.faltan.collectAsState()
     val escuchando by vm.escuchandoAvion.collectAsState()
+    val avisos by vm.avisos.collectAsState()
 
     // El ViewModel decide QUÉ avisar; la pantalla (que sí tiene Context) lo muestra
     LaunchedEffect(Unit) {
@@ -166,9 +167,7 @@ fun PantallaAvisos(vm: AvisosViewModel) {
                 )
             }
 
-            Tarjeta(titulo = "Historial") {
-                // TODO Paso 7: reemplazar por HistorialAvisos(avisos)
-            }
+            HistorialAvisos(avisos)
         }
     }
 }
