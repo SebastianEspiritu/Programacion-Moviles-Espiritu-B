@@ -57,6 +57,11 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
     private val _creado = MutableStateFlow<UiState<Post>?>(null)
     val creado: StateFlow<UiState<Post>?> = _creado.asStateFlow()
 
+    // ---------- Borrar (Fase 2) ----------
+    // null = no se pidió borrar; Exito lleva el id que se borró
+    private val _borrado = MutableStateFlow<UiState<Int>?>(null)
+    val borrado: StateFlow<UiState<Int>?> = _borrado.asStateFlow()
+
     init { cargar() }
 
     /** Carga la lista respetando el filtro actual (también lo usa Reintentar). */
@@ -90,6 +95,7 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
 
     fun abrir(id: Int) {
         trabajoDetalle?.cancel()          // si abres otra publicación, se cancela la anterior
+        _borrado.value = null             // el aviso de borrado es de la publicación anterior
         trabajoDetalle = viewModelScope.launch {
             _detalle.value = UiState.Cargando
 
@@ -127,5 +133,30 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
     /** Al entrar a la pantalla Crear, se borra el mensaje del envío anterior. */
     fun nuevaPublicacion() {
         _creado.value = null
+    }
+
+    fun borrar(id: Int) {
+        viewModelScope.launch {
+            _borrado.value = UiState.Cargando
+            repo.borrar(id)
+                .onSuccess {
+                    // JSONPlaceholder no borra de verdad: la quitamos de la lista ya descargada
+                    quitarDeLista(id)
+                    _borrado.value = UiState.Exito(id)
+                }
+                .onFailure { _borrado.value = UiState.Error(mensajeDe(it)) }
+        }
+    }
+
+    /** Se llama cuando la pantalla ya mostró el aviso de borrado. */
+    fun avisoBorradoMostrado() {
+        _borrado.value = null
+    }
+
+    private fun quitarDeLista(id: Int) {
+        val estado = _lista.value
+        if (estado is UiState.Exito) {
+            _lista.value = UiState.Exito(estado.datos.filterNot { it.id == id })
+        }
     }
 }

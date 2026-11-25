@@ -3,7 +3,9 @@ package com.espiritu.murocampus.data.remote
 import com.espiritu.murocampus.model.Comentario
 import com.espiritu.murocampus.model.NuevoPost
 import com.espiritu.murocampus.model.Post
+import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
@@ -25,4 +27,8 @@ interface PostApi {
 
     @POST("posts")
     suspend fun crear(@Body nuevo: NuevoPost): Post
+
+    // Fase 2: la respuesta viene vacía; Response<Unit> permite revisar el código HTTP
+    @DELETE("posts/{id}")
+    suspend fun borrar(@Path("id") id: Int): Response<Unit>
 }

@@ -5,6 +5,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,10 +15,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -35,6 +46,8 @@ import com.espiritu.murocampus.viewmodel.UiState
 @Composable
 fun PantallaDetalle(vm: PostsViewModel, id: Int) {
     val estado by vm.detalle.collectAsStateWithLifecycle()
+    val borrado by vm.borrado.collectAsStateWithLifecycle()
+    var confirmarBorrado by remember { mutableStateOf(false) }
 
     when (val e = estado) {
         UiState.Cargando -> Cargando(texto = "Cargando publicación…")
@@ -51,6 +64,15 @@ fun PantallaDetalle(vm: PostsViewModel, id: Int) {
         ) {
             item { TarjetaDetalle(e.datos.post) }
             item {
+                AccionesDetalle(
+                    borrando = borrado is UiState.Cargando,
+                    onEliminar = { confirmarBorrado = true }
+                )
+            }
+            (borrado as? UiState.Error)?.let { error ->
+                item { MensajeError(error.mensaje) }
+            }
+            item {
                 Text(
                     text = "Comentarios (${e.datos.comentarios.size})",
                     color = MaterialTheme.colorScheme.primary,
@@ -64,6 +86,60 @@ fun PantallaDetalle(vm: PostsViewModel, id: Int) {
             }
         }
     }
+
+    // Confirmación antes de borrar
+    if (confirmarBorrado) {
+        AlertDialog(
+            onDismissRequest = { confirmarBorrado = false },
+            title = { Text("¿Eliminar publicación?") },
+            text = { Text("Se enviará DELETE posts/$id al servidor.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmarBorrado = false
+                    vm.borrar(id)
+                }) { Text("Eliminar", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmarBorrado = false }) { Text("Cancelar") }
+            }
+        )
+    }
+}
+
+/** Botones del detalle (Fase 2). */
+@Composable
+private fun AccionesDetalle(borrando: Boolean, onEliminar: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (borrando) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
+        Button(
+            onClick = onEliminar,
+            enabled = !borrando,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.error,
+                contentColor = MaterialTheme.colorScheme.onError
+            )
+        ) {
+            Text("Eliminar", fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+private fun MensajeError(mensaje: String) {
+    Text(
+        text = mensaje,
+        color = MaterialTheme.colorScheme.onErrorContainer,
+        fontSize = 14.sp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.errorContainer)
+            .padding(12.dp)
+    )
 }
 
 /** Título y texto completos de la publicación. */
