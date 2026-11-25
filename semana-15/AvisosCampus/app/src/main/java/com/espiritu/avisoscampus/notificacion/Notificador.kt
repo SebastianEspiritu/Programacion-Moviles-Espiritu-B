@@ -4,12 +4,15 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import com.espiritu.avisoscampus.MainActivity
 import com.espiritu.avisoscampus.R
 import com.espiritu.avisoscampus.model.Aviso
 
@@ -45,12 +48,22 @@ object Notificador {
         // 1. Sin permiso no se muestra nada, pero tampoco se lanza un error
         if (!tienePermiso(context)) return false
 
+        // Al tocar la notificación se abre MainActivity
+        val intent = Intent(context, MainActivity::class.java)
+        val pendiente = PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE
+        )
+
         // 2. Construir la notificación
         val notificacion = NotificationCompat.Builder(context, CANAL)
             .setSmallIcon(R.drawable.ic_notificacion)
             .setContentTitle(aviso.titulo)
             .setContentText(aviso.texto)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(pendiente)
             .setAutoCancel(true)
             .build()
 
