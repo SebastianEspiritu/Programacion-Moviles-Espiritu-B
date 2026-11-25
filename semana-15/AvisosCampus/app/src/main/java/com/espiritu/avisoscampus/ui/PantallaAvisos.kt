@@ -3,7 +3,9 @@ package com.espiritu.avisoscampus.ui
 import android.Manifest
 import android.content.Intent
 import android.content.IntentFilter
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -17,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.espiritu.avisoscampus.model.PermisoUi
@@ -35,6 +38,7 @@ import com.espiritu.avisoscampus.viewmodel.AvisosViewModel
 fun PantallaAvisos(vm: AvisosViewModel) {
     val contexto = LocalContext.current
     val permiso by vm.permiso.collectAsState()
+    val mensaje by vm.mensaje.collectAsState()
     val faltan by vm.faltan.collectAsState()
     val escuchando by vm.escuchandoAvion.collectAsState()
     val avisos by vm.avisos.collectAsState()
@@ -43,7 +47,7 @@ fun PantallaAvisos(vm: AvisosViewModel) {
     LaunchedEffect(Unit) {
         vm.eventos.collect { aviso ->
             val mostrado = Notificador.mostrar(contexto, aviso)
-            // TODO Paso 8: si no se mostró, avisar al ViewModel
+            if (!mostrado) vm.noSePudoMostrar()
         }
     }
 
@@ -109,6 +113,44 @@ fun PantallaAvisos(vm: AvisosViewModel) {
                     }
                 }) {
                     Text("Permitir notificaciones")
+                }
+            }
+
+            // Recuadro de error: solo si hay mensaje
+            mensaje?.let { texto ->
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = texto,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
+            }
+
+            if (permiso == PermisoUi.Denegado || mensaje != null) {
+                OutlinedButton(
+                    onClick = {
+                        val intent =
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                    .putExtra(Settings.EXTRA_APP_PACKAGE, contexto.packageName)
+                            } else {
+                                Intent(
+                                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                    Uri.fromParts("package", contexto.packageName, null)
+                                )
+                            }
+                        contexto.startActivity(intent)
+                    },
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
+                    Text("Abrir ajustes")
                 }
             }
 
