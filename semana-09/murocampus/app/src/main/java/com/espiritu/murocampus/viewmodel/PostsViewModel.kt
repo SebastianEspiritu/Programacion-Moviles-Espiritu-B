@@ -10,8 +10,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /** Lo que muestra la pantalla de detalle: la publicación y sus comentarios. */
@@ -32,6 +35,16 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
     val usuarioFiltro: StateFlow<Int?> = _usuarioFiltro.asStateFlow()
 
     private var trabajoLista: Job? = null
+
+    // ---------- Búsqueda (Fase 2) ----------
+    // Filtra por título las publicaciones YA descargadas: no hace otra llamada a la API
+    private val _busqueda = MutableStateFlow("")
+    val busqueda: StateFlow<String> = _busqueda.asStateFlow()
+
+    /** Lo que dibuja la lista: el estado de la descarga con la búsqueda aplicada. */
+    val listaVisible: StateFlow<UiState<List<Post>>> =
+        combine(_lista, _busqueda) { estado, texto -> aplicarBusqueda(estado, texto) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UiState.Cargando)
 
     // ---------- Detalle ----------
     private val _detalle = MutableStateFlow<UiState<DetalleUi>>(UiState.Cargando)
@@ -63,6 +76,16 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
     fun filtrar(userId: Int?) {
         _usuarioFiltro.value = userId
         cargar()
+    }
+
+    fun buscar(texto: String) {
+        _busqueda.value = texto
+    }
+
+    private fun aplicarBusqueda(estado: UiState<List<Post>>, texto: String): UiState<List<Post>> {
+        val buscado = texto.trim()
+        if (estado !is UiState.Exito || buscado.isEmpty()) return estado
+        return UiState.Exito(estado.datos.filter { it.title.contains(buscado, ignoreCase = true) })
     }
 
     fun abrir(id: Int) {

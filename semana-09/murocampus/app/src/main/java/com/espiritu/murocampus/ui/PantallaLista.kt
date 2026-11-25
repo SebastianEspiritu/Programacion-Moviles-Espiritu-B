@@ -13,11 +13,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -30,10 +34,16 @@ fun PantallaLista(
     vm: PostsViewModel,
     onAbrir: (Int) -> Unit = {}
 ) {
-    val estado by vm.lista.collectAsStateWithLifecycle()
+    val estado by vm.listaVisible.collectAsStateWithLifecycle()
     val usuarioFiltro by vm.usuarioFiltro.collectAsStateWithLifecycle()
+    val busqueda by vm.busqueda.collectAsStateWithLifecycle()
 
     Column(Modifier.fillMaxSize()) {
+        CampoBusqueda(
+            texto = busqueda,
+            onCambiar = { vm.buscar(it) }
+        )
+
         FiltroUsuarios(
             seleccionado = usuarioFiltro,
             onElegir = { vm.filtrar(it) }
@@ -52,7 +62,11 @@ fun PantallaLista(
                     modifier = Modifier.fillMaxWidth().padding(32.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Sin publicaciones", color = TextoSecundario)
+                    Text(
+                        text = if (busqueda.isBlank()) "Sin publicaciones"
+                        else "Sin resultados para «${busqueda.trim()}»",
+                        color = TextoSecundario
+                    )
                 }
             } else {
                 LazyColumn(
@@ -101,4 +115,27 @@ private fun FiltroUsuarios(seleccionado: Int?, onElegir: (Int?) -> Unit) {
             )
         }
     }
+}
+
+/** Campo para buscar por título; la X limpia la búsqueda. */
+@Composable
+private fun CampoBusqueda(texto: String, onCambiar: (String) -> Unit) {
+    OutlinedTextField(
+        value = texto,
+        onValueChange = onCambiar,
+        placeholder = { Text("Buscar por título") },
+        singleLine = true,
+        trailingIcon = {
+            if (texto.isNotEmpty()) {
+                TextButton(onClick = { onCambiar("") }) { Text("✕") }
+            }
+        },
+        colors = OutlinedTextFieldDefaults.colors(
+            unfocusedBorderColor = Color(0xFF9AA5B8),
+            focusedBorderColor = MaterialTheme.colorScheme.primary
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 12.dp, end = 12.dp, top = 10.dp)
+    )
 }
