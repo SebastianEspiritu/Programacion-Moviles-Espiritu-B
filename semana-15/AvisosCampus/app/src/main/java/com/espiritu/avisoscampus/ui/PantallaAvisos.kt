@@ -31,6 +31,7 @@ import com.espiritu.avisoscampus.viewmodel.AvisosViewModel
 fun PantallaAvisos(vm: AvisosViewModel) {
     val contexto = LocalContext.current
     val permiso by vm.permiso.collectAsState()
+    val faltan by vm.faltan.collectAsState()
 
     // El ViewModel decide QUÉ avisar; la pantalla (que sí tiene Context) lo muestra
     LaunchedEffect(Unit) {
@@ -101,7 +102,30 @@ fun PantallaAvisos(vm: AvisosViewModel) {
             }
 
             Tarjeta(titulo = "Recordatorio") {
-                // TODO Paso 5: "Recordar en 10 s", "Cancelar" y el texto "Faltan N s"
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
+                ) {
+                    Button(
+                        onClick = { vm.recordarEn(10) },
+                        enabled = faltan == null            // se deshabilita al empezar
+                    ) {
+                        Text("Recordar en 10 s")
+                    }
+                    OutlinedButton(
+                        onClick = { vm.cancelarRecordatorio() },
+                        enabled = faltan != null            // solo mientras corre
+                    ) {
+                        Text("Cancelar")
+                    }
+                }
+                faltan?.let { segundos ->
+                    Text(
+                        text = "Faltan $segundos s",
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+                }
             }
 
             Tarjeta(titulo = "Receptor de anuncios") {

@@ -6,6 +6,8 @@ import com.espiritu.avisoscampus.data.AvisosRepository
 import com.espiritu.avisoscampus.model.Aviso
 import com.espiritu.avisoscampus.model.Origen
 import com.espiritu.avisoscampus.model.PermisoUi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -29,6 +31,11 @@ class AvisosViewModel(private val repo: AvisosRepository) : ViewModel() {
     private val _mensaje = MutableStateFlow<String?>(null)
     val mensaje: StateFlow<String?> = _mensaje.asStateFlow()
 
+    // Recordatorio: segundos que faltan, o null si no hay uno activo
+    private var trabajo: Job? = null
+    private val _faltan = MutableStateFlow<Int?>(null)
+    val faltan: StateFlow<Int?> = _faltan.asStateFlow()
+
     fun permisoRespondido(concedido: Boolean) {
         _permiso.value = if (concedido) PermisoUi.Concedido else PermisoUi.Denegado
     }
@@ -39,7 +46,30 @@ class AvisosViewModel(private val repo: AvisosRepository) : ViewModel() {
             _eventos.emit(aviso)
         }
     }
-    // TODO Paso 5: faltan, recordarEn(segundos) y cancelarRecordatorio()
+
+    fun recordarEn(segundos: Int = 10) {
+        if (trabajo?.isActive == true) return          // ya hay uno corriendo
+        trabajo = viewModelScope.launch {
+            try {
+                for (s in segundos downTo 1) {
+                    _faltan.value = s
+                    delay(1000)
+                }
+                val aviso = repo.registrar(
+                    "Recordatorio",
+                    "Revisa tu laboratorio pendiente",
+                    Origen.RECORDATORIO
+                )
+                _eventos.emit(aviso)
+            } finally {
+                _faltan.value = null                    // termine bien o cancelado
+            }
+        }
+    }
+
+    fun cancelarRecordatorio() {
+        trabajo?.cancel()                               // no se emite ningún aviso
+    }
     // TODO Paso 6: escuchandoAvion, cambiarEscucha(valor) y alCambiarModoAvion(activo)
     // TODO Paso 8: fun noSePudoMostrar()
 }
