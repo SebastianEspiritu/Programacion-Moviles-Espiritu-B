@@ -1,5 +1,7 @@
 package com.espiritu.avisoscampus.ui
 
+import android.Manifest
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -14,13 +16,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.espiritu.avisoscampus.model.PermisoUi
 import com.espiritu.avisoscampus.notificacion.Notificador
+import com.espiritu.avisoscampus.ui.theme.GrisFondo
+import com.espiritu.avisoscampus.ui.theme.GrisTexto
+import com.espiritu.avisoscampus.ui.theme.RojoFondo
+import com.espiritu.avisoscampus.ui.theme.RojoTexto
+import com.espiritu.avisoscampus.ui.theme.VerdeFondo
+import com.espiritu.avisoscampus.ui.theme.VerdeTexto
 import com.espiritu.avisoscampus.viewmodel.AvisosViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaAvisos(vm: AvisosViewModel) {
     val contexto = LocalContext.current
+    val permiso by vm.permiso.collectAsState()
 
     // El ViewModel decide QUÉ avisar; la pantalla (que sí tiene Context) lo muestra
     LaunchedEffect(Unit) {
@@ -33,11 +43,11 @@ fun PantallaAvisos(vm: AvisosViewModel) {
     val lanzador = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { concedido ->
-        // TODO: vm.permisoRespondido(concedido)
+        vm.permisoRespondido(concedido)
     }
 
     LaunchedEffect(Unit) {
-        // TODO: si Notificador.tienePermiso(contexto), vm.permisoRespondido(true)
+        if (Notificador.tienePermiso(contexto)) vm.permisoRespondido(true)
     }
 
     // TODO Paso 6: DisposableEffect(escuchando) que registra y quita el ModoAvionReceiver
@@ -63,7 +73,22 @@ fun PantallaAvisos(vm: AvisosViewModel) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Tarjeta(titulo = "Permiso de notificaciones") {
-                // TODO Paso 2: etiqueta del estado y botón "Permitir notificaciones"
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("Estado:", style = MaterialTheme.typography.bodyMedium)
+                    EtiquetaPermiso(permiso)
+                }
+                Button(onClick = {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        lanzador.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        vm.permisoRespondido(true)   // antes de Android 13 no se pide
+                    }
+                }) {
+                    Text("Permitir notificaciones")
+                }
             }
 
             Tarjeta(titulo = "Avisos") {
@@ -108,5 +133,24 @@ fun Tarjeta(titulo: String, contenido: @Composable ColumnScope.() -> Unit) {
             )
             contenido()
         }
+    }
+}
+
+// Etiqueta de color: Sin pedir (gris), Permitido (verde) o Denegado (rojo)
+@Composable
+private fun EtiquetaPermiso(permiso: PermisoUi) {
+    val (texto, fondo, color) = when (permiso) {
+        PermisoUi.SinPedir -> Triple("Sin pedir", GrisFondo, GrisTexto)
+        PermisoUi.Concedido -> Triple("Permitido", VerdeFondo, VerdeTexto)
+        PermisoUi.Denegado -> Triple("Denegado", RojoFondo, RojoTexto)
+    }
+    Surface(color = fondo, shape = RoundedCornerShape(50)) {
+        Text(
+            text = texto,
+            color = color,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+        )
     }
 }
