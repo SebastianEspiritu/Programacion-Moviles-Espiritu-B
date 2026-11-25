@@ -1,6 +1,8 @@
 package com.espiritu.avisoscampus.ui
 
 import android.Manifest
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -16,8 +18,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import com.espiritu.avisoscampus.model.PermisoUi
 import com.espiritu.avisoscampus.notificacion.Notificador
+import com.espiritu.avisoscampus.receiver.ModoAvionReceiver
 import com.espiritu.avisoscampus.ui.theme.GrisFondo
 import com.espiritu.avisoscampus.ui.theme.GrisTexto
 import com.espiritu.avisoscampus.ui.theme.RojoFondo
@@ -32,6 +36,7 @@ fun PantallaAvisos(vm: AvisosViewModel) {
     val contexto = LocalContext.current
     val permiso by vm.permiso.collectAsState()
     val faltan by vm.faltan.collectAsState()
+    val escuchando by vm.escuchandoAvion.collectAsState()
 
     // El ViewModel decide QUÉ avisar; la pantalla (que sí tiene Context) lo muestra
     LaunchedEffect(Unit) {
@@ -51,7 +56,21 @@ fun PantallaAvisos(vm: AvisosViewModel) {
         if (Notificador.tienePermiso(contexto)) vm.permisoRespondido(true)
     }
 
-    // TODO Paso 6: DisposableEffect(escuchando) que registra y quita el ModoAvionReceiver
+    // Se registra solo mientras el switch está activo y SIEMPRE se quita en onDispose
+    DisposableEffect(escuchando) {
+        if (escuchando) {
+            val receptor = ModoAvionReceiver { activo -> vm.alCambiarModoAvion(activo) }
+            ContextCompat.registerReceiver(
+                contexto,
+                receptor,
+                IntentFilter(Intent.ACTION_AIRPLANE_MODE_CHANGED),
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+            onDispose { contexto.unregisterReceiver(receptor) }
+        } else {
+            onDispose { }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -129,7 +148,22 @@ fun PantallaAvisos(vm: AvisosViewModel) {
             }
 
             Tarjeta(titulo = "Receptor de anuncios") {
-                // TODO Paso 6: Switch "Escuchar el modo avión"
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Escuchar el modo avión", style = MaterialTheme.typography.bodyMedium)
+                    Switch(
+                        checked = escuchando,
+                        onCheckedChange = { vm.cambiarEscucha(it) }
+                    )
+                }
+                Text(
+                    text = "Activa o desactiva el modo avión del celular",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
             Tarjeta(titulo = "Historial") {
