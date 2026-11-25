@@ -1,8 +1,10 @@
 package com.espiritu.avisoscampus.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.espiritu.avisoscampus.data.AvisosRepository
 import com.espiritu.avisoscampus.model.Aviso
+import com.espiritu.avisoscampus.model.Origen
 import com.espiritu.avisoscampus.model.PermisoUi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,6 +12,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 class AvisosViewModel(private val repo: AvisosRepository) : ViewModel() {
 
@@ -29,7 +32,13 @@ class AvisosViewModel(private val repo: AvisosRepository) : ViewModel() {
     fun permisoRespondido(concedido: Boolean) {
         _permiso.value = if (concedido) PermisoUi.Concedido else PermisoUi.Denegado
     }
-    // TODO Paso 3: fun avisarAhora()
+
+    fun avisarAhora() {
+        viewModelScope.launch {
+            val aviso = repo.registrar("Tarea lista", "Tu entrega fue registrada", Origen.BOTON)
+            _eventos.emit(aviso)
+        }
+    }
     // TODO Paso 5: faltan, recordarEn(segundos) y cancelarRecordatorio()
     // TODO Paso 6: escuchandoAvion, cambiarEscucha(valor) y alCambiarModoAvion(activo)
     // TODO Paso 8: fun noSePudoMostrar()

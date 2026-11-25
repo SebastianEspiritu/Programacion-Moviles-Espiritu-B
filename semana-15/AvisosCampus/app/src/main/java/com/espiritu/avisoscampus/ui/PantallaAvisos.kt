@@ -92,7 +92,12 @@ fun PantallaAvisos(vm: AvisosViewModel) {
             }
 
             Tarjeta(titulo = "Avisos") {
-                // TODO Paso 3: botón "Mostrar aviso" que llama a vm.avisarAhora()
+                Button(
+                    onClick = { vm.avisarAhora() },
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
+                    Text("Mostrar aviso")
+                }
             }
 
             Tarjeta(titulo = "Recordatorio") {
