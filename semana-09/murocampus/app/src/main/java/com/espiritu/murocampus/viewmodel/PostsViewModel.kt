@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.espiritu.murocampus.data.PostRepository
 import com.espiritu.murocampus.model.Comentario
+import com.espiritu.murocampus.model.NuevoPost
 import com.espiritu.murocampus.model.Post
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -37,6 +38,11 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
     val detalle: StateFlow<UiState<DetalleUi>> = _detalle.asStateFlow()
 
     private var trabajoDetalle: Job? = null
+
+    // ---------- Crear ----------
+    // null = aún no se envió
+    private val _creado = MutableStateFlow<UiState<Post>?>(null)
+    val creado: StateFlow<UiState<Post>?> = _creado.asStateFlow()
 
     init { cargar() }
 
@@ -84,5 +90,19 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
                 )
             }
         }
+    }
+
+    fun publicar(titulo: String, texto: String) {
+        viewModelScope.launch {
+            _creado.value = UiState.Cargando
+            repo.crear(NuevoPost(userId = 1, title = titulo, body = texto))
+                .onSuccess { _creado.value = UiState.Exito(it) }
+                .onFailure { _creado.value = UiState.Error(mensajeDe(it)) }
+        }
+    }
+
+    /** Al entrar a la pantalla Crear, se borra el mensaje del envío anterior. */
+    fun nuevaPublicacion() {
+        _creado.value = null
     }
 }
